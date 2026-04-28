@@ -2,11 +2,22 @@ import asyncio
 import websockets
 import numpy as np
 from faster_whisper import WhisperModel
+from groq import Groq
+import time
 
 # Cargamos el modelo base de faster whisper
 model_size = "base"
 print("Cargando modelo de IA...")
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+# API key de Groq
+GROQ_API_KEY = ""
+groq_client  = Groq(api_key=GROQ_API_KEY)
+
+system_prompt = {
+    "role": "system",
+    "content": "Eres un asistente de voz inteligente conectado a un ESP32, tus respuestas deben ser muy breves y útiles" 
+}
 
 async def handle_audio(websocket):
     print("¡ESP32 Conectado! (Esperando señal del sensor IR...)")
@@ -72,6 +83,34 @@ async def process_audio(audio_data):
         # await obtener_respuesta_ia(texto_limpio)
     else:
         print("Sonido detectado, pero no parece ser una frase clara.")
+
+async def get_res(message):
+    inicio_latencia = time.time() # Contador para medir latencia
+
+    try:
+        print(f"Preguntandole al modelo...")
+
+        chat_completion = groq_client.completions.create(
+            messages = [
+                system_prompt,
+                {"role": "user", "content": message}
+            ],
+            model = "llama-3.1-8b-instant",
+            temperature = 0.8,
+            max_tokens = 500
+        )
+
+        respuesta = chat_completion.choices[0].message.content
+        fin_latencia = time.time() - inicio_latencia
+
+        print(f"IA: {respuesta}")
+        print(f"Latencia de respuesta: {fin_latencia:.2f} segundos")
+
+        return respuesta
+    
+    except Exception as error:
+        print(f"Error IA: {error}")
+        return None
 
 async def main():
     # ping_timeout = None para evitar desconexiones accidentales
