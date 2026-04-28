@@ -1,0 +1,68 @@
+import asyncio
+import websockets
+import numpy as np
+from faster_whisper import WhisperModel
+
+# Cargamos el modelo base de faster whisper
+model_size = "base"
+print("Cargando modelo de IA...")
+model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+async def handle_audio(websocket):
+    print("¡ESP32 Conectado! (Esperando señal del sensor IR...)")
+    audio_buffer = []
+    
+    try:
+        # Usamos un timeout corto para detectar cuando dejas de enviar datos (quitas la mano)
+        while True:
+            try:
+                # Esperamos datos. Si en 0.5 seg no llega nada, asumimos que quitaste la mano.
+                message = await asyncio.wait_for(websocket.recv(), timeout = 0.5)
+                
+                samples = np.frombuffer(message, dtype=np.int16)
+
+                # Multiplicamos por 8.0 para que el modelo escuche mucho mejor
+                audio_buffer.extend(samples.astype(np.float32) / 32768.0)
+                
+                # Si el buffer es muy largo (más de 7 segundos), procesamos para no saturar
+                if len(audio_buffer) > 16000 * 7:
+                    await process_audio(audio_buffer)
+                    audio_buffer = []
+
+            except asyncio.TimeoutError:
+                # SI HUBO TIMEOUT: significa que ya no estás enviando audio (quitaste la mano)
+                if len(audio_buffer) > 8000: # Solo si hay al menos medio segundo de audio
+                    print("Analizando frase...")
+                    await process_audio(audio_buffer)
+                    audio_buffer = [] # Limpiamos para la próxima vez que pongas la mano
+                continue
+
+    except websockets.exceptions.ConnectionClosed:
+        print("ESP32 Desconectado.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+async def process_audio(audio_data):
+    audio_np = np.array(audio_data)
+
+    # VAD_FILTER ayuda a ignorar ruidos de fondo cuando no hablas
+    segments, info = model.transcribe(
+        audio_np * 8.0, 
+        beam_size=5, 
+        language="es", 
+        vad_filter=True,
+        vad_parameters=dict(min_silence_duration_ms=500)
+    )
+    
+    for segment in segments:
+        if segment.text.strip():
+            print(f"-> [IA detectó]: {segment.text}")
+
+async def main():
+    # ping_timeout = None para evitar desconexiones accidentales
+    async with websockets.serve(handle_audio, "0.0.0.0", 8765, ping_timeout=None):
+        print("Servidor listo. Pon la mano en el sensor IR y habla.")
+        await asyncio.Future()
+
+if __name__ == "__main__":
+    asyncio.run(main())
