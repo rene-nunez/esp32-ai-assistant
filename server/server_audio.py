@@ -32,7 +32,6 @@ async def handle_audio(websocket):
                 
                 samples = np.frombuffer(message, dtype=np.int16)
 
-                # Multiplicamos por 8.0 para que el modelo escuche mucho mejor
                 audio_buffer.extend(samples.astype(np.float32) / 32768.0)
                 
                 # Si el buffer es muy largo (más de 7 segundos), procesamos para no saturar
@@ -56,15 +55,28 @@ async def handle_audio(websocket):
 async def process_audio(audio_data):
     audio_np = np.array(audio_data)
     
+    volumen = np.max(np.abs(audio_np))
+    print(f"Nivel de audio máximo: {volumen:.4f}")
+
+    if volumen < 0.01:
+        print("ruido residual ignorado")
+        return
+
+    audio_normalizado = audio_np / volumen if volumen > 0 else audio_np
+
     # Aplicar filtros nativos de Whisper para reducir alucinaciones
     segments, info = model.transcribe(
-        audio_np * 8.0, 
+        audio_normalizado,
         beam_size = 5, 
         language = "es",
-        vad_filter = True, # Filtro de actividad de voz
-        vad_parameters = dict(min_silence_duration_ms=500),
-        no_speech_threshold = 0.6,
-        log_prob_threshold = -1.0 # Si la probabilidad es muy baja, lo ignora
+        vad_filter = True, 
+        vad_parameters = dict(
+            min_silence_duration_ms = 800,
+            threshold = 0.6,
+        min_speech_duration_ms = 250
+    ),
+    no_speech_threshold = 0.7,
+    condition_on_previous_text = False
     )
     
     texto_detectado = ""
