@@ -44,19 +44,34 @@ async def handle_audio(websocket):
 
 async def process_audio(audio_data):
     audio_np = np.array(audio_data)
-
-    # VAD_FILTER ayuda a ignorar ruidos de fondo cuando no hablas
+    
+    # Aplicar filtros nativos de Whisper para reducir alucinaciones
     segments, info = model.transcribe(
         audio_np * 8.0, 
-        beam_size=5, 
-        language="es", 
-        vad_filter=True,
-        vad_parameters=dict(min_silence_duration_ms=500)
+        beam_size = 5, 
+        language = "es",
+        vad_filter = True, # Filtro de actividad de voz
+        vad_parameters = dict(min_silence_duration_ms=500),
+        no_speech_threshold = 0.6,
+        log_prob_threshold = -1.0 # Si la probabilidad es muy baja, lo ignora
     )
     
+    texto_detectado = ""
+
     for segment in segments:
-        if segment.text.strip():
-            print(f"-> [IA detectó]: {segment.text}")
+        # Solo aceptamos el texto si la IA está al menos 50% segura y no es texto vacio
+        if segment.no_speech_prob < 0.5 and segment.text.strip():
+            texto_detectado += segment.text + " "
+
+    texto_limpio = texto_detectado.strip()
+
+    # Si el texto es muy corto, ignorar
+    if len(texto_limpio) > 2: 
+        print(f"[Voz]: {texto_limpio}")
+        # Aquí llamaremos a Groq
+        # await obtener_respuesta_ia(texto_limpio)
+    else:
+        print("Sonido detectado, pero no parece ser una frase clara.")
 
 async def main():
     # ping_timeout = None para evitar desconexiones accidentales
