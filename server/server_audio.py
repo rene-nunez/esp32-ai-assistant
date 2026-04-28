@@ -79,8 +79,8 @@ async def process_audio(audio_data):
     # Si el texto es muy corto, ignorar
     if len(texto_limpio) > 2: 
         print(f"[Voz]: {texto_limpio}")
-        # Aquí llamaremos a Groq
-        # await obtener_respuesta_ia(texto_limpio)
+        await(get_res(texto_limpio))
+        
     else:
         print("Sonido detectado, pero no parece ser una frase clara.")
 
@@ -90,14 +90,14 @@ async def get_res(message):
     try:
         print(f"Preguntandole al modelo...")
 
-        chat_completion = groq_client.completions.create(
+        chat_completion = groq_client.chat.completions.create(
             messages = [
                 system_prompt,
                 {"role": "user", "content": message}
             ],
             model = "llama-3.1-8b-instant",
-            temperature = 0.8,
-            max_tokens = 500
+            temperature = 0.7,
+            max_tokens = 300
         )
 
         respuesta = chat_completion.choices[0].message.content
