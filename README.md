@@ -23,9 +23,9 @@
 
 ### Fase 2: Groq API
 
-- [ ] Integración de IA: conectar la salida de Whisper con la API de Groq (Llama 3).
-- [ ] Lógica de conversación: configurar el "System Prompt" para que la IA responda de forma breve y concisa.
-[ ] Prueba de latencia: validar que el tiempo de respuesta entre el fin del audio y el texto de la IA sea menor a 1 segundo.
+- [x] Integración de IA: conectar la salida de Whisper con la API de Groq (Llama 3).
+- [x] Lógica de conversación: configurar el "System Prompt" para que la IA responda de forma breve y concisa.
+- [x] Prueba de latencia: validar que el tiempo de respuesta entre el fin del audio y el texto de la IA sea menor a 1 segundo.
 
 ### Fase 3: TTS & DAC
 

@@ -2,39 +2,67 @@ import asyncio
 import websockets
 import numpy as np
 from faster_whisper import WhisperModel
+from groq import Groq
+import time
+import http.server
+import threading
+import os
+import tempfile
 
-# Cargamos el modelo base de faster whisper
 model_size = "base"
 print("Cargando modelo de IA...")
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
+GROQ_API_KEY = "API KEY"
+groq_client  = Groq(api_key=GROQ_API_KEY)
+
+# ── Configuración ─────────────────────────────────────────────
+SERVER_IP  = "172.20.10.3"   # IP de la laptop en la red local
+HTTP_PORT  = 8766
+IDIOMA_TTS = "es"            # "es" = Google TTS español, "en" = Orpheus inglés
+
+system_prompt = {
+    "role": "system",
+    "content": "Eres un asistente de voz inteligente conectado a un ESP32, tus respuestas deben ser muy breves y útiles. Máximo 2 oraciones."
+}
+
+# ── Servidor HTTP local para servir WAV/MP3 al ESP32 ──────────
+AUDIO_DIR = tempfile.mkdtemp()
+
+class SilentHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=AUDIO_DIR, **kwargs)
+    def log_message(self, format, *args):
+        pass
+
+threading.Thread(
+    target=lambda: http.server.HTTPServer(("0.0.0.0", HTTP_PORT), SilentHandler).serve_forever(),
+    daemon=True
+).start()
+print(f"Servidor HTTP de audio en :{HTTP_PORT}")
+
+# ─────────────────────────────────────────────────────────────
+
 async def handle_audio(websocket):
-    print("¡ESP32 Conectado! (Esperando señal del sensor IR...)")
+    print("¡ESP32 Conectado!")
     audio_buffer = []
-    
+
     try:
-        # Usamos un timeout corto para detectar cuando dejas de enviar datos (quitas la mano)
         while True:
             try:
-                # Esperamos datos. Si en 0.5 seg no llega nada, asumimos que quitaste la mano.
-                message = await asyncio.wait_for(websocket.recv(), timeout = 0.5)
-                
+                message = await asyncio.wait_for(websocket.recv(), timeout=0.5)
                 samples = np.frombuffer(message, dtype=np.int16)
-
-                # Multiplicamos por 8.0 para que el modelo escuche mucho mejor
                 audio_buffer.extend(samples.astype(np.float32) / 32768.0)
-                
-                # Si el buffer es muy largo (más de 7 segundos), procesamos para no saturar
+
                 if len(audio_buffer) > 16000 * 7:
-                    await process_audio(audio_buffer)
+                    await process_audio(audio_buffer, websocket)
                     audio_buffer = []
 
             except asyncio.TimeoutError:
-                # SI HUBO TIMEOUT: significa que ya no estás enviando audio (quitaste la mano)
-                if len(audio_buffer) > 8000: # Solo si hay al menos medio segundo de audio
+                if len(audio_buffer) > 8000:
                     print("Analizando frase...")
-                    await process_audio(audio_buffer)
-                    audio_buffer = [] # Limpiamos para la próxima vez que pongas la mano
+                    await process_audio(audio_buffer, websocket)
+                    audio_buffer = []
                 continue
 
     except websockets.exceptions.ConnectionClosed:
@@ -42,41 +70,118 @@ async def handle_audio(websocket):
     except Exception as e:
         print(f"Error: {e}")
 
-async def process_audio(audio_data):
+async def process_audio(audio_data, websocket):
     audio_np = np.array(audio_data)
-    
-    # Aplicar filtros nativos de Whisper para reducir alucinaciones
-    segments, info = model.transcribe(
-        audio_np * 8.0, 
-        beam_size = 5, 
-        language = "es",
-        vad_filter = True, # Filtro de actividad de voz
-        vad_parameters = dict(min_silence_duration_ms=500),
-        no_speech_threshold = 0.6,
-        log_prob_threshold = -1.0 # Si la probabilidad es muy baja, lo ignora
-    )
-    
-    texto_detectado = ""
+    volumen = np.max(np.abs(audio_np))
+    print(f"Nivel de audio máximo: {volumen:.4f}")
 
+    if volumen < 0.01:
+        print("Ruido residual ignorado.")
+        return
+
+    audio_normalizado = audio_np / volumen if volumen > 0 else audio_np
+
+    segments, _ = model.transcribe(
+        audio_normalizado,
+        beam_size=5,
+        language="es",
+        vad_filter=True,
+        vad_parameters=dict(
+            min_silence_duration_ms=800,
+            threshold=0.6,
+            min_speech_duration_ms=250
+        ),
+        no_speech_threshold=0.7,
+        condition_on_previous_text=False
+    )
+
+    texto_detectado = ""
     for segment in segments:
-        # Solo aceptamos el texto si la IA está al menos 50% segura y no es texto vacio
         if segment.no_speech_prob < 0.5 and segment.text.strip():
             texto_detectado += segment.text + " "
 
     texto_limpio = texto_detectado.strip()
 
-    # Si el texto es muy corto, ignorar
-    if len(texto_limpio) > 2: 
+    if len(texto_limpio) > 2:
         print(f"[Voz]: {texto_limpio}")
-        # Aquí llamaremos a Groq
-        # await obtener_respuesta_ia(texto_limpio)
+        await get_res(texto_limpio, websocket)
     else:
         print("Sonido detectado, pero no parece ser una frase clara.")
 
+async def get_res(message, websocket):
+    inicio = time.time()
+    try:
+        print("Preguntándole al modelo...")
+        chat_completion = groq_client.chat.completions.create(
+            messages=[system_prompt, {"role": "user", "content": message}],
+            model="llama-3.1-8b-instant",
+            temperature=0.7,
+            max_tokens=100  # respuestas cortas para cumplir límite de 200 chars en TTS
+        )
+        respuesta = chat_completion.choices[0].message.content.strip()
+        print(f"IA: {respuesta}")
+        print(f"Latencia LLM: {time.time() - inicio:.2f}s")
+
+        await generar_y_enviar_audio(respuesta, websocket)
+
+    except Exception as error:
+        print(f"Error LLM: {error}")
+
+async def generar_y_enviar_audio(texto, websocket):
+    t = time.time()
+
+    if IDIOMA_TTS == "en":
+        # ── Orpheus (inglés, alta calidad, WAV) ───────────────
+        # Límite: 200 chars por llamada — partir si es necesario
+        fragmentos = partir_texto(texto, max_chars=190)
+        urls = []
+        for i, frag in enumerate(fragmentos):
+            try:
+                response = groq_client.audio.speech.create(
+                    model="canopylabs/orpheus-v1-english",
+                    voice="diana",          # voz femenina natural
+                    input=frag,
+                    response_format="wav"
+                )
+                filename = f"resp_{i}.wav"
+                path = os.path.join(AUDIO_DIR, filename)
+                with open(path, "wb") as f:
+                    f.write(response.content)
+                urls.append(f"http://{SERVER_IP}:{HTTP_PORT}/{filename}")
+            except Exception as e:
+                print(f"Error Orpheus fragmento {i}: {e}")
+
+        print(f"Latencia TTS: {time.time() - t:.2f}s")
+        # Enviar URLs separadas por coma — el ESP32 las reproduce en orden
+        if urls:
+            await websocket.send(",".join(urls))
+
+    else:
+        # ── Google TTS en español via connecttospeech ─────────
+        # Mandamos el texto directo; el ESP32 llama a connecttospeech()
+        print(f"Latencia total: {time.time() - t:.2f}s")
+        await websocket.send(texto)
+
+def partir_texto(texto, max_chars=190):
+    """Divide el texto en fragmentos de max_chars respetando palabras."""
+    palabras = texto.split()
+    fragmentos = []
+    actual = ""
+    for palabra in palabras:
+        if len(actual) + len(palabra) + 1 <= max_chars:
+            actual += (" " if actual else "") + palabra
+        else:
+            if actual:
+                fragmentos.append(actual)
+            actual = palabra
+    if actual:
+        fragmentos.append(actual)
+    return fragmentos if fragmentos else [texto[:max_chars]]
+
 async def main():
-    # ping_timeout = None para evitar desconexiones accidentales
     async with websockets.serve(handle_audio, "0.0.0.0", 8765, ping_timeout=None):
-        print("Servidor listo. Pon la mano en el sensor IR y habla.")
+        print(f"Servidor listo. Modo TTS: {'Orpheus (inglés)' if IDIOMA_TTS == 'en' else 'Google TTS (español)'}")
+        print("Pon la mano en el sensor IR y habla.")
         await asyncio.Future()
 
 if __name__ == "__main__":
