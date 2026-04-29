@@ -13,11 +13,11 @@ model_size = "base"
 print("Cargando modelo de IA...")
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
-GROQ_API_KEY = "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"
+GROQ_API_KEY = "API KEY"
 groq_client  = Groq(api_key=GROQ_API_KEY)
 
 # ── Configuración ─────────────────────────────────────────────
-SERVER_IP  = "192.168.0.5"   # IP de la laptop en la red local
+SERVER_IP  = "172.20.10.3"   # IP de la laptop en la red local
 HTTP_PORT  = 8766
 IDIOMA_TTS = "es"            # "es" = Google TTS español, "en" = Orpheus inglés
 
