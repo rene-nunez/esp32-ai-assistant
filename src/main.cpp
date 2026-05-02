@@ -5,7 +5,7 @@
 #include "Audio.h"
 
 const char* ssid     = "ssid";
-const char* password = "passworrd;
+const char* password = "passworrd";
 const char* websockets_connection_string = "ws://172.20.10.3:8765";
 
 using namespace websockets;
