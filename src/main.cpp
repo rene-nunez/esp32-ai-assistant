@@ -5,7 +5,7 @@
 #include "Audio.h"
 
 const char* ssid     = "ssid";
-const char* password = "passworrd";
+const char* password = "password";
 const char* websockets_connection_string = "ws://172.20.10.3:8765";
 
 using namespace websockets;
@@ -21,7 +21,7 @@ Audio audio;
 #define AMP_LRC   27
 #define AMP_DOUT  25
 
-#define PIN_BTN 13
+#define PIN_BTN 17
 #define DEBOUNCE_MS 50
 #define pin_led 15
 
@@ -130,7 +130,7 @@ void setup() {
 
     // 4) Audio
     audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);
-    audio.setVolume(18);
+    audio.setVolume(24);
     Serial.println("Audio OK");
 
     // 5) Micrófono I2S
