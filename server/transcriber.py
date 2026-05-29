@@ -1,18 +1,21 @@
+import logging
+
 import numpy as np
+from numpy.typing import NDArray
 from faster_whisper import WhisperModel
 
 from server import config
 
+log = logging.getLogger(__name__)
+
 
 class Transcriber:
-    def __init__(self):
+    def __init__(self) -> None:
         self._model: WhisperModel | None = None
 
-    def ensure_loaded(self):
+    def ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        import logging
-        log = logging.getLogger(__name__)
         log.info("Cargando modelo Whisper...")
         self._model = WhisperModel(
             config.WHISPER_MODEL,
@@ -20,12 +23,10 @@ class Transcriber:
             compute_type=config.WHISPER_COMPUTE_TYPE,
         )
 
-    def transcribe(self, audio: np.ndarray) -> str:
+    def transcribe(self, audio: NDArray[np.float32]) -> str:
         self.ensure_loaded()
-        import logging
-        log = logging.getLogger(__name__)
 
-        volumen = np.max(np.abs(audio))
+        volumen = float(np.max(np.abs(audio)))
         if volumen < config.VOLUME_MIN_THRESHOLD:
             return ""
 

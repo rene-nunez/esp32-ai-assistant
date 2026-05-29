@@ -5,7 +5,6 @@ from groq import Groq
 
 from server import config
 
-
 log = logging.getLogger(__name__)
 
 

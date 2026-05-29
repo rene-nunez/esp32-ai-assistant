@@ -1,8 +1,10 @@
 import asyncio
 import logging
+from collections.abc import Sequence
 
 import numpy as np
 import websockets
+from websockets.server import WebSocketServerProtocol
 
 from server import config
 from server import protocol
@@ -21,9 +23,9 @@ transcriber = Transcriber()
 transcriber.ensure_loaded()
 
 
-async def handle_audio(websocket):
+async def handle_audio(websocket: WebSocketServerProtocol) -> None:
     log.info("ESP32 Conectado")
-    audio_buffer = []
+    audio_buffer: list[float] = []
     esperando_frase = False
 
     try:
@@ -60,8 +62,11 @@ async def handle_audio(websocket):
         log.error("Error en WebSocket: %s", e)
 
 
-async def _process_and_respond(audio_data, websocket):
-    audio_np = np.array(audio_data)
+async def _process_and_respond(
+    audio_data: Sequence[float],
+    websocket: WebSocketServerProtocol,
+) -> None:
+    audio_np = np.array(audio_data, dtype=np.float32)
 
     texto = transcriber.transcribe(audio_np)
     if not texto:
@@ -73,7 +78,7 @@ async def _process_and_respond(audio_data, websocket):
     await tts_handler.generate_and_send(respuesta, websocket)
 
 
-async def main():
+async def main() -> None:
     modo_tts = "Orpheus (inglés)" if config.TTS_LANG == "en" else "Google TTS (español)"
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None
