@@ -8,18 +8,24 @@ import http.server
 import threading
 import os
 import tempfile
+from dotenv import load_dotenv
 
-model_size = "base"
+load_dotenv()
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY no configurada. Crea un archivo .env basado en .env.example")
+
+model_size = os.getenv("WHISPER_MODEL", "base")
 print("Cargando modelo de IA...")
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
-GROQ_API_KEY = "API KEY"
-groq_client  = Groq(api_key=GROQ_API_KEY)
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 # ── Configuración ─────────────────────────────────────────────
-SERVER_IP  = "172.20.10.3"   # IP de la laptop en la red local
-HTTP_PORT  = 8766
-IDIOMA_TTS = "es"            # "es" = Google TTS español, "en" = Orpheus inglés
+SERVER_IP  = os.getenv("SERVER_IP", "172.20.10.2")
+HTTP_PORT  = int(os.getenv("SERVER_HTTP_PORT", "8766"))
+IDIOMA_TTS = os.getenv("TTS_LANG", "es")
 
 system_prompt = {
     "role": "system",
