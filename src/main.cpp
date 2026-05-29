@@ -1,11 +1,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include <ArduinoWebsockets.h>
 #include <driver/i2s.h>
 #include "Audio.h"
 
-const char* ssid     = "ssid";
-const char* password = "password";
 const char* websockets_connection_string = "ws://172.20.10.3:8765";
 
 using namespace websockets;
@@ -73,9 +72,13 @@ void reproducir(String payload) {
     }
 }
 
-void audio_eof_mp3(const char* info)    { reproduciendo = false; tiempo_fin_reproduccion = millis(); }
-void audio_eof_stream(const char* info) { reproduciendo = false; tiempo_fin_reproduccion = millis(); }
-void audio_eof_speech(const char* info) { reproduciendo = false; tiempo_fin_reproduccion = millis(); }
+static void on_audio_end() {
+    reproduciendo = false;
+    tiempo_fin_reproduccion = millis();
+}
+void audio_eof_mp3(const char*)    { on_audio_end(); }
+void audio_eof_stream(const char*) { on_audio_end(); }
+void audio_eof_speech(const char*) { on_audio_end(); }
 
 void registrar_callbacks() {
     client.onMessage([](WebsocketsMessage msg) {
@@ -117,9 +120,12 @@ void setup() {
     pinMode(pin_led, OUTPUT);
 
     // 1) WiFi
-    WiFi.begin(ssid, password);
-    Serial.print("Conectando WiFi");
-    while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(180);
+    if (!wm.autoConnect("ESP32-Assistant")) {
+        Serial.println("WiFi no conectado, reiniciando...");
+        ESP.restart();
+    }
     Serial.println("\nWiFi OK");
 
     // 2) Callbacks solo una vez
