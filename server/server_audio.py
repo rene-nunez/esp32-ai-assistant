@@ -7,6 +7,7 @@ import numpy as np
 import websockets
 
 from server import config
+from server import protocol
 from server.transcriber import Transcriber
 from server import llm_handler
 from server import tts_handler
@@ -21,7 +22,7 @@ log = logging.getLogger(__name__)
 transcriber = Transcriber()
 transcriber.ensure_loaded()
 
-# Servidor HTTP auxiliar (se eliminará en Commit 8 con protocolo v2)
+# Servidor HTTP auxiliar (se eliminará en Commit 8 con el HTTP cleanup)
 
 
 class SilentHandler(http.server.SimpleHTTPRequestHandler):
@@ -44,24 +45,35 @@ log.info("Servidor HTTP de audio en :%d", config.HTTP_PORT)
 async def handle_audio(websocket):
     log.info("ESP32 Conectado")
     audio_buffer = []
+    esperando_frase = False
 
     try:
-        while True:
-            try:
-                message = await asyncio.wait_for(websocket.recv(), timeout=0.5)
-                samples = np.frombuffer(message, dtype=np.int16)
-                audio_buffer.extend(samples.astype(np.float32) / 32768.0)
-
-                if len(audio_buffer) > config.AUDIO_RATE * config.AUDIO_CHUNK_SECONDS:
-                    await _process_and_respond(audio_buffer, websocket)
-                    audio_buffer = []
-
-            except asyncio.TimeoutError:
-                if len(audio_buffer) > config.AUDIO_MIN_SILENCE_SAMPLES:
-                    log.info("Analizando frase...")
-                    await _process_and_respond(audio_buffer, websocket)
-                    audio_buffer = []
+        async for message in websocket:
+            if not message:
                 continue
+
+            msg_type, payload = protocol.decode(message)
+
+            if msg_type == protocol.MessageType.TEXT:
+                text = payload.decode("utf-8")
+                if text == protocol.CMD_VOICE_START:
+                    log.info("Inicio de frase")
+                    esperando_frase = True
+                    audio_buffer = []
+                elif text == protocol.CMD_VOICE_END:
+                    log.info("Fin de frase (%d samples)", len(audio_buffer))
+                    esperando_frase = False
+                    if audio_buffer:
+                        await _process_and_respond(audio_buffer, websocket)
+                    audio_buffer = []
+
+            elif msg_type == protocol.MessageType.AUDIO:
+                if esperando_frase:
+                    samples = (
+                        np.frombuffer(payload, dtype=np.int16).astype(np.float32)
+                        / 32768.0
+                    )
+                    audio_buffer.extend(samples)
 
     except websockets.exceptions.ConnectionClosed:
         log.warning("ESP32 Desconectado")
