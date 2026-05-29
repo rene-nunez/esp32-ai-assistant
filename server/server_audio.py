@@ -1,7 +1,5 @@
 import asyncio
-import http.server
 import logging
-import threading
 
 import numpy as np
 import websockets
@@ -21,25 +19,6 @@ log = logging.getLogger(__name__)
 
 transcriber = Transcriber()
 transcriber.ensure_loaded()
-
-# Servidor HTTP auxiliar (se eliminará en Commit 8 con el HTTP cleanup)
-
-
-class SilentHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=tts_handler.AUDIO_DIR, **kwargs)
-
-    def log_message(self, format, *args):
-        pass
-
-
-threading.Thread(
-    target=lambda: http.server.HTTPServer(
-        ("0.0.0.0", config.HTTP_PORT), SilentHandler
-    ).serve_forever(),
-    daemon=True,
-).start()
-log.info("Servidor HTTP de audio en :%d", config.HTTP_PORT)
 
 
 async def handle_audio(websocket):
