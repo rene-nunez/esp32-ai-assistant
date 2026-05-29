@@ -36,6 +36,7 @@ async def generate_and_send(text: str, websocket) -> None:
     if config.TTS_LANG == "en":
         client = Groq(api_key=config.GROQ_API_KEY)
         fragmentos = split_text(text, max_chars=config.TTS_MAX_CHARS)
+        urls = []
         for i, frag in enumerate(fragmentos):
             try:
                 response = client.audio.speech.create(
@@ -44,13 +45,21 @@ async def generate_and_send(text: str, websocket) -> None:
                     input=frag,
                     response_format="wav",
                 )
-                # Enviar WAV binario por WebSocket (protocolo v2)
-                msg = protocol.encode_audio(response.content)
-                await websocket.send(msg)
+                filename = f"resp_{i}.wav"
+                path = os.path.join(AUDIO_DIR, filename)
+                with open(path, "wb") as f:
+                    f.write(response.content)
+                urls.append(
+                    f"http://{config.SERVER_IP}:{config.HTTP_PORT}/{filename}"
+                )
             except Exception as e:
                 log.error("Error Orpheus fragmento %d: %s", i, e)
 
         log.info("Latencia TTS: %.2fs", time.time() - t)
+        # Enviar URLs como comandos PLAY_URL
+        for url in urls:
+            msg = protocol.encode_text(f"PLAY_URL:{url}")
+            await websocket.send(msg)
     else:
         # Google TTS: enviar comando PLAY_TEXT
         msg = protocol.encode_text(f"{protocol.CMD_PLAY_TEXT}{text}")

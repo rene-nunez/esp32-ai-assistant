@@ -31,6 +31,7 @@ class MessageType(IntEnum):
 CMD_VOICE_START = "VOICE_START"
 CMD_VOICE_END = "VOICE_END"
 CMD_PLAY_TEXT = "PLAY_TEXT:"
+CMD_PLAY_URL = "PLAY_URL:"
 
 
 def encode(msg_type: int, payload: bytes) -> bytes:
