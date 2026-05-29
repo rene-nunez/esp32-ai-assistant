@@ -107,11 +107,15 @@ void registrar_callbacks() {
     });
 }
 
-void conectar_websocket() {
-    while (!client.connect(websockets_connection_string)) {
-        delay(1000); Serial.print(".");
+unsigned long ultimo_intento_ws = 0;
+#define REINTENTO_WS_MS 3000
+
+bool conectar_websocket() {
+    if (client.connect(websockets_connection_string)) {
+        Serial.println("WebSocket OK");
+        return true;
     }
-    Serial.println("\nWebSocket OK");
+    return false;
 }
 
 void setup() {
@@ -131,8 +135,10 @@ void setup() {
     // 2) Callbacks solo una vez
     registrar_callbacks();
 
-    // 3) WebSocket
-    conectar_websocket();
+    // 3) WebSocket (primer intento, no bloqueante)
+    if (!conectar_websocket()) {
+        Serial.println("WebSocket no disponible, reintentando en loop...");
+    }
 
     // 4) Audio
     audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);
@@ -166,7 +172,9 @@ void setup() {
 void loop() {
     if (client.available()) {
         client.poll();
-    } else {
+        ultimo_intento_ws = 0;
+    } else if (ultimo_intento_ws == 0 || millis() - ultimo_intento_ws > REINTENTO_WS_MS) {
+        ultimo_intento_ws = millis();
         Serial.println("Reconectando WebSocket...");
         conectar_websocket();
     }
