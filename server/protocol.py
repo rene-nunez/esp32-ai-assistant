@@ -1,19 +1,20 @@
-"""Protocolo binario v2.
+"""Binary protocol v2.
 
-Formato de cada mensaje WebSocket:
-  [1 byte tipo][4 bytes longitud payload (big-endian)][N bytes payload]
+Each WebSocket message format:
+  [1 byte type][4 bytes payload length (big-endian)][N bytes payload]
 
-Tipos:
-  0x01 = MSG_AUDIO — audio PCM/WAV binario
-  0x02 = MSG_TEXT  — texto UTF-8 de control
+Types:
+  0x01 = MSG_AUDIO — PCM/WAV audio binary
+  0x02 = MSG_TEXT  — UTF-8 control text
 
-Mensajes de control (MSG_TEXT):
-  Cliente -> Servidor:
-    "VOICE_START" — inicio de frase (toggle ON o VAD detectó voz)
-    "VOICE_END"   — fin de frase (toggle OFF o silencio sostenido)
+Control messages (MSG_TEXT):
+  Client -> Server:
+    "VOICE_START" — start of speech (toggle ON or VAD detected voice)
+    "VOICE_END"   — end of speech (toggle OFF or silence timeout)
 
-  Servidor -> Cliente:
-    "PLAY_TEXT:<texto>" — reproducir con audio.connecttospeech()
+  Server -> Client:
+    "PLAY_TEXT:<text>" — play with audio.connecttospeech()
+    "PLAY_URL:<url>"   — play Orpheus WAV served via HTTP
 """
 
 import struct
@@ -27,7 +28,6 @@ class MessageType(IntEnum):
     TEXT = 0x02
 
 
-# Control commands
 CMD_VOICE_START = "VOICE_START"
 CMD_VOICE_END = "VOICE_END"
 CMD_PLAY_TEXT = "PLAY_TEXT:"

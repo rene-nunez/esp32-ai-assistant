@@ -16,7 +16,7 @@ class Transcriber:
     def ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        log.info("Cargando modelo Whisper...")
+        log.info("Loading Whisper model...")
         self._model = WhisperModel(
             config.WHISPER_MODEL,
             device=config.WHISPER_DEVICE,
@@ -26,11 +26,11 @@ class Transcriber:
     def transcribe(self, audio: NDArray[np.float32]) -> str:
         self.ensure_loaded()
 
-        volumen = float(np.max(np.abs(audio)))
-        if volumen < config.VOLUME_MIN_THRESHOLD:
+        volume = float(np.max(np.abs(audio)))
+        if volume < config.VOLUME_MIN_THRESHOLD:
             return ""
 
-        audio_norm = audio / volumen if volumen > 0 else audio
+        audio_norm = audio / volume if volume > 0 else audio
 
         segments, _ = self._model.transcribe(
             audio_norm,
@@ -46,9 +46,9 @@ class Transcriber:
             condition_on_previous_text=False,
         )
 
-        texto = ""
+        text = ""
         for segment in segments:
             if segment.no_speech_prob < 0.5 and segment.text.strip():
-                texto += segment.text + " "
+                text += segment.text + " "
 
-        return texto.strip()
+        return text.strip()

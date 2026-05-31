@@ -1,12 +1,12 @@
 # ESP32 AI Assistant
 
-Asistente de voz con ESP32 + Whisper + Groq + TTS.
+Voice assistant with ESP32 + Whisper + Groq + TTS.
 
 ## Hardware
 
 - ESP32 DevKit
 - Micrófono MH-ET LIVE I2S MEMS
-- Amplificador MAX98357A + altavoz
+- MAX98357A I2S amplifier + speaker
 - Botón de 4 vías
 
 ## Arquitectura
@@ -34,5 +34,5 @@ Abrir `src/main.cpp` con PlatformIO (VSCode). En el primer arranque crea un hots
 ### Uso
 
 1. Presiona el botón para comenzar a escuchar (toggle ON/OFF)
-2. Habla; solo se envía audio cuando detecta voz
-3. Silencio >1.5s → procesa la frase y responde por el altavoz
+2. Speak; audio is sent only when voice is detected
+3. Silence >1.5s → phrase is processed and the speaker plays the response

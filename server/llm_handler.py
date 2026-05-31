@@ -9,8 +9,8 @@ log = logging.getLogger(__name__)
 
 
 def ask(text: str) -> str:
-    log.info("Preguntándole al modelo...")
-    inicio = time.time()
+    log.info("Asking the LLM...")
+    start = time.time()
 
     client = Groq(api_key=config.GROQ_API_KEY)
     chat_completion = client.chat.completions.create(
@@ -20,8 +20,8 @@ def ask(text: str) -> str:
         max_tokens=config.LLM_MAX_TOKENS,
     )
 
-    respuesta = chat_completion.choices[0].message.content.strip()
-    log.info("IA: %s", respuesta)
-    log.info("Latencia LLM: %.2fs", time.time() - inicio)
+    response = chat_completion.choices[0].message.content.strip()
+    log.info("AI: %s", response)
+    log.info("LLM latency: %.2fs", time.time() - start)
 
-    return respuesta
+    return response

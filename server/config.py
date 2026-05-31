@@ -8,7 +8,7 @@ load_dotenv()
 # Groq
 GROQ_API_KEY: Final[str | None] = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY no configurada. Crea un archivo .env basado en .env.example")
+    raise RuntimeError("GROQ_API_KEY not set. Create a .env file from .env.example")
 
 # Servidor
 SERVER_IP: Final[str] = os.getenv("SERVER_IP", "172.20.10.2")
@@ -43,7 +43,7 @@ TTS_VOICE: Final[str] = "diana"
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
     "content": (
-        "Eres un asistente de voz inteligente conectado a un ESP32, "
-        "tus respuestas deben ser muy breves y útiles. Máximo 2 oraciones."
+        "You are a smart voice assistant connected to an ESP32. "
+        "Keep responses very short and useful. Max 2 sentences."
     ),
 }

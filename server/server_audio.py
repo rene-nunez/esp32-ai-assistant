@@ -24,9 +24,9 @@ transcriber.ensure_loaded()
 
 
 async def handle_audio(websocket: WebSocketServerProtocol) -> None:
-    log.info("ESP32 Conectado")
+    log.info("ESP32 Connected")
     audio_buffer: list[float] = []
-    esperando_frase = False
+    awaiting_phrase = False
 
     try:
         async for message in websocket:
@@ -38,18 +38,18 @@ async def handle_audio(websocket: WebSocketServerProtocol) -> None:
             if msg_type == protocol.MessageType.TEXT:
                 text = payload.decode("utf-8")
                 if text == protocol.CMD_VOICE_START:
-                    log.info("Inicio de frase")
-                    esperando_frase = True
+                    log.info("Voice started")
+                    awaiting_phrase = True
                     audio_buffer = []
                 elif text == protocol.CMD_VOICE_END:
-                    log.info("Fin de frase (%d samples)", len(audio_buffer))
-                    esperando_frase = False
+                    log.info("Voice ended (%d samples)", len(audio_buffer))
+                    awaiting_phrase = False
                     if audio_buffer:
                         await _process_and_respond(audio_buffer, websocket)
                     audio_buffer = []
 
             elif msg_type == protocol.MessageType.AUDIO:
-                if esperando_frase:
+                if awaiting_phrase:
                     samples = (
                         np.frombuffer(payload, dtype=np.int16).astype(np.float32)
                         / 32768.0
@@ -57,9 +57,9 @@ async def handle_audio(websocket: WebSocketServerProtocol) -> None:
                     audio_buffer.extend(samples)
 
     except websockets.exceptions.ConnectionClosed:
-        log.warning("ESP32 Desconectado")
+        log.warning("ESP32 Disconnected")
     except Exception as e:
-        log.error("Error en WebSocket: %s", e)
+        log.error("WebSocket error: %s", e)
 
 
 async def _process_and_respond(
@@ -68,22 +68,22 @@ async def _process_and_respond(
 ) -> None:
     audio_np = np.array(audio_data, dtype=np.float32)
 
-    texto = transcriber.transcribe(audio_np)
-    if not texto:
-        log.info("Sonido detectado pero no es una frase clara.")
+    text = transcriber.transcribe(audio_np)
+    if not text:
+        log.info("Audio detected but not clear speech.")
         return
 
-    log.info("[Voz]: %s", texto)
-    respuesta = llm_handler.ask(texto)
-    await tts_handler.generate_and_send(respuesta, websocket)
+    log.info("[Voice]: %s", text)
+    response = llm_handler.ask(text)
+    await tts_handler.generate_and_send(response, websocket)
 
 
 async def main() -> None:
-    modo_tts = "Orpheus (inglés)" if config.TTS_LANG == "en" else "Google TTS (español)"
+    tts_mode = "Orpheus (English)" if config.TTS_LANG == "en" else "Google TTS (Spanish)"
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None
     ):
-        log.info("Servidor listo en puerto %d. Modo TTS: %s", config.WS_PORT, modo_tts)
+        log.info("Server ready on port %d. TTS mode: %s", config.WS_PORT, tts_mode)
         await asyncio.Future()
 
 

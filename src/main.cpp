@@ -24,7 +24,7 @@ Audio audio;
 #define DEBOUNCE_MS 50
 #define pin_led 15
 
-// Protocolo v2
+// Protocol v2
 #define MSG_AUDIO 0x01
 #define MSG_TEXT  0x02
 
@@ -32,27 +32,27 @@ Audio audio;
 #define VAD_ENERGY_THRESHOLD 500
 #define SILENCE_TIMEOUT_MS   1500
 
-bool escuchando = false;
-bool btn_anterior = false;
-unsigned long ultimo_cambio_btn = 0;
-unsigned long ultimo_audio_con_voz = 0;
+bool listening = false;
+bool last_btn_state = false;
+unsigned long last_btn_change = 0;
+unsigned long last_voice_time = 0;
 
-bool reproduciendo = false;
-unsigned long tiempo_inicio_reproduccion = 0;
-unsigned long tiempo_fin_reproduccion = 0;
-#define TIMEOUT_REPRODUCCION 15000
+bool playing = false;
+unsigned long play_start_time = 0;
+unsigned long play_end_time = 0;
+#define PLAY_TIMEOUT 15000
 
-#define MAX_COLA 8
-String cola[MAX_COLA];
-int cola_head = 0;
-int cola_tail = 0;
+#define MAX_QUEUE 8
+String queue[MAX_QUEUE];
+int queue_head = 0;
+int queue_tail = 0;
 
-unsigned long ultimo_intento_ws = 0;
-#define REINTENTO_WS_MS 3000
+unsigned long last_ws_attempt = 0;
+#define WS_RETRY_MS 3000
 
-void enviar_protocolo(uint8_t tipo, const uint8_t* payload, size_t len) {
+void send_protocol(uint8_t type, const uint8_t* payload, size_t len) {
     uint8_t header[5];
-    header[0] = tipo;
+    header[0] = type;
     header[1] = (len >> 24) & 0xFF;
     header[2] = (len >> 16) & 0xFF;
     header[3] = (len >>  8) & 0xFF;
@@ -67,60 +67,60 @@ void enviar_protocolo(uint8_t tipo, const uint8_t* payload, size_t len) {
     free(buf);
 }
 
-void enviar_control(const char* comando) {
-    enviar_protocolo(MSG_TEXT, (const uint8_t*)comando, strlen(comando));
+void send_control(const char* command) {
+    send_protocol(MSG_TEXT, (const uint8_t*)command, strlen(command));
 }
 
-int16_t energia_chunk(const int16_t* samples, size_t count) {
-    int32_t suma = 0;
+int16_t energy_chunk(const int16_t* samples, size_t count) {
+    int32_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         int32_t val = samples[i];
         if (val < 0) val = -val;
-        suma += val;
+        sum += val;
     }
-    return (int16_t)(suma / count);
+    return (int16_t)(sum / count);
 }
 
-void leer_boton() {
-    bool btn_actual = (digitalRead(PIN_BTN) == LOW);
-    if (btn_actual && !btn_anterior && millis() - ultimo_cambio_btn > DEBOUNCE_MS) {
-        escuchando = !escuchando;
-        digitalWrite(pin_led, escuchando);
-        ultimo_cambio_btn = millis();
-        Serial.print(escuchando ? "Escuchando ON" : "Escuchando OFF");
+void read_button() {
+    bool btn_now = (digitalRead(PIN_BTN) == LOW);
+    if (btn_now && !last_btn_state && millis() - last_btn_change > DEBOUNCE_MS) {
+        listening = !listening;
+        digitalWrite(pin_led, listening);
+        last_btn_change = millis();
+        Serial.print(listening ? "Listening ON" : "Listening OFF");
 
-        if (escuchando) {
-            ultimo_audio_con_voz = 0;
-            enviar_control("VOICE_START");
+        if (listening) {
+            last_voice_time = 0;
+            send_control("VOICE_START");
             Serial.println(" — VOICE_START");
         } else {
-            enviar_control("VOICE_END");
+            send_control("VOICE_END");
             Serial.println(" — VOICE_END");
         }
     }
-    btn_anterior = btn_actual;
+    last_btn_state = btn_now;
 }
 
-void encolar(String s) {
-    int next = (cola_tail + 1) % MAX_COLA;
-    if (next != cola_head) { cola[cola_tail] = s; cola_tail = next; }
+void enqueue(String s) {
+    int next = (queue_tail + 1) % MAX_QUEUE;
+    if (next != queue_head) { queue[queue_tail] = s; queue_tail = next; }
 }
-bool cola_vacia() { return cola_head == cola_tail; }
-String desencolar() {
-    String s = cola[cola_head];
-    cola_head = (cola_head + 1) % MAX_COLA;
+bool queue_empty() { return queue_head == queue_tail; }
+String dequeue() {
+    String s = queue[queue_head];
+    queue_head = (queue_head + 1) % MAX_QUEUE;
     return s;
 }
 
-void reproducir(String payload) {
-    reproduciendo = true;
-    tiempo_inicio_reproduccion = millis();
-    Serial.print("Reproduciendo: ");
+void play(String payload) {
+    playing = true;
+    play_start_time = millis();
+    Serial.print("Playing: ");
     Serial.println(payload);
 
     if (payload.startsWith("PLAY_TEXT:")) {
-        String texto = payload.substring(10);
-        audio.connecttospeech(texto.c_str(), "es");
+        String text = payload.substring(10);
+        audio.connecttospeech(text.c_str(), "es");
     } else if (payload.startsWith("PLAY_URL:")) {
         String url = payload.substring(9);
         audio.connecttohost(url.c_str());
@@ -132,34 +132,34 @@ void reproducir(String payload) {
 }
 
 static void on_audio_end() {
-    reproduciendo = false;
-    tiempo_fin_reproduccion = millis();
+    playing = false;
+    play_end_time = millis();
 }
 void audio_eof_mp3(const char*)    { on_audio_end(); }
 void audio_eof_stream(const char*) { on_audio_end(); }
 void audio_eof_speech(const char*) { on_audio_end(); }
 
-void procesar_mensaje_ws(const uint8_t* data, size_t len) {
+void process_ws_message(const uint8_t* data, size_t len) {
     if (len < 5) return;
-    uint8_t tipo = data[0];
+    uint8_t type = data[0];
     uint32_t payload_len = ((uint32_t)data[1] << 24) |
                            ((uint32_t)data[2] << 16) |
                            ((uint32_t)data[3] <<  8) |
                            ((uint32_t)data[4]);
     if (5 + payload_len > len) return;
 
-    if (tipo == MSG_TEXT) {
-        String texto = String((const char*)(data + 5), payload_len);
-        Serial.print("Recibido TEXT: ");
-        Serial.println(texto);
-        encolar(texto);
+    if (type == MSG_TEXT) {
+        String text = String((const char*)(data + 5), payload_len);
+        Serial.print("Received TEXT: ");
+        Serial.println(text);
+        enqueue(text);
     }
 }
 
-void registrar_callbacks() {
+void register_callbacks() {
     client.onMessage([](WebsocketsMessage msg) {
         if (msg.isBinary()) {
-            procesar_mensaje_ws(
+            process_ws_message(
                 (const uint8_t*)msg.data().c_str(),
                 msg.data().length()
             );
@@ -167,12 +167,12 @@ void registrar_callbacks() {
     });
     client.onEvent([](WebsocketsEvent event, String data) {
         if (event == WebsocketsEvent::ConnectionClosed) {
-            Serial.println("WebSocket desconectado.");
+            Serial.println("WebSocket disconnected.");
         }
     });
 }
 
-bool conectar_websocket() {
+bool connect_websocket() {
     if (client.connect(websockets_connection_string)) {
         Serial.println("WebSocket OK");
         return true;
@@ -188,15 +188,15 @@ void setup() {
     WiFiManager wm;
     wm.setConfigPortalTimeout(180);
     if (!wm.autoConnect("ESP32-Assistant")) {
-        Serial.println("WiFi no conectado, reiniciando...");
+        Serial.println("WiFi not connected, restarting...");
         ESP.restart();
     }
     Serial.println("WiFi OK");
 
-    registrar_callbacks();
+    register_callbacks();
 
-    if (!conectar_websocket()) {
-        Serial.println("WebSocket no disponible, reintentando en loop...");
+    if (!connect_websocket()) {
+        Serial.println("WebSocket unavailable, retrying in loop...");
     }
 
     audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);
@@ -223,54 +223,54 @@ void setup() {
     i2s_driver_install(I2S_MIC, &i2s_config, 0, NULL);
     i2s_set_pin(I2S_MIC, &pin_config);
 
-    Serial.println("=== LISTO (v2 + VAD) ===");
+    Serial.println("=== READY (v2 + VAD) ===");
 }
 
 void loop() {
     if (client.available()) {
         client.poll();
-        ultimo_intento_ws = 0;
-    } else if (ultimo_intento_ws == 0 || millis() - ultimo_intento_ws > REINTENTO_WS_MS) {
-        ultimo_intento_ws = millis();
-        Serial.println("Reconectando WebSocket...");
-        conectar_websocket();
+        last_ws_attempt = 0;
+    } else if (last_ws_attempt == 0 || millis() - last_ws_attempt > WS_RETRY_MS) {
+        last_ws_attempt = millis();
+        Serial.println("Reconnecting WebSocket...");
+        connect_websocket();
     }
 
     audio.loop();
 
-    if (!reproduciendo && !cola_vacia()) {
-        reproducir(desencolar());
+    if (!playing && !queue_empty()) {
+        play(dequeue());
     }
 
-    if (reproduciendo && (millis() - tiempo_inicio_reproduccion > TIMEOUT_REPRODUCCION)) {
-        Serial.println("TIMEOUT reproducción — liberando");
+    if (playing && (millis() - play_start_time > PLAY_TIMEOUT)) {
+        Serial.println("Playback TIMEOUT — releasing");
         audio.stopSong();
-        reproduciendo = false;
+        playing = false;
     }
-    if (reproduciendo) return;
+    if (playing) return;
 
-    leer_boton();
+    read_button();
 
-    if (escuchando) {
+    if (listening) {
         int16_t samples[512];
         size_t bytes_read = 0;
         i2s_read(I2S_MIC, &samples, sizeof(samples), &bytes_read, pdMS_TO_TICKS(10));
 
         if (bytes_read > 0) {
-            int16_t energia = energia_chunk(samples, bytes_read / sizeof(int16_t));
+            int16_t energy = energy_chunk(samples, bytes_read / sizeof(int16_t));
 
-            if (energia > VAD_ENERGY_THRESHOLD) {
-                ultimo_audio_con_voz = millis();
-                enviar_protocolo(MSG_AUDIO, (const uint8_t*)samples, bytes_read);
+            if (energy > VAD_ENERGY_THRESHOLD) {
+                last_voice_time = millis();
+                send_protocol(MSG_AUDIO, (const uint8_t*)samples, bytes_read);
             }
 
-            if (ultimo_audio_con_voz > 0 &&
-                millis() - ultimo_audio_con_voz > SILENCE_TIMEOUT_MS) {
-                Serial.println("Silencio sostenido — VOICE_END auto");
-                enviar_control("VOICE_END");
-                escuchando = false;
+            if (last_voice_time > 0 &&
+                millis() - last_voice_time > SILENCE_TIMEOUT_MS) {
+                Serial.println("Silence timeout — auto VOICE_END");
+                send_control("VOICE_END");
+                listening = false;
                 digitalWrite(pin_led, LOW);
-                ultimo_audio_con_voz = 0;
+                last_voice_time = 0;
             }
         }
     } else {
