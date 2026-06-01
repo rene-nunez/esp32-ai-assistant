@@ -2,37 +2,22 @@
 
 Voice assistant with ESP32 + Whisper + Groq + TTS.
 
-## Hardware
-
-- ESP32 DevKit
-- Micrófono MH-ET LIVE I2S MEMS
-- MAX98357A I2S amplifier + speaker
-- Botón de 4 vías
-
-## Arquitectura
-
-```
-ESP32 ──WebSocket (protocolo v2)──▶ Servidor Python
-  │ 0x01 = audio PCM                 │ Whisper → Groq → TTS
-  │ 0x02 = control (START/END)       │
-  │◀── PLAY_TEXT / PLAY_URL ─────────│
-```
-
-## Servidor
+## Quickstart
 
 ```bash
 python -m venv .venv
 pip install -r requirements.txt
-cp .env.example .env   # edita GROQ_API_KEY y SERVER_IP
+cp .env.example .env   # edit GROQ_API_KEY and SERVER_IP
 python -m server.server_audio
 ```
 
-## ESP32
+Flash `src/main.cpp` with PlatformIO. On first boot, connect to the `ESP32-Assistant` hotspot to configure WiFi.
 
-Abrir `src/main.cpp` con PlatformIO (VSCode). En el primer arranque crea un hotspot `ESP32-Assistant` para configurar WiFi.
+Press the button to toggle listening. Speak — audio is sent only when voice is detected. Silence >1.5s triggers the response.
 
-### Uso
+## Protocol
 
-1. Presiona el botón para comenzar a escuchar (toggle ON/OFF)
-2. Speak; audio is sent only when voice is detected
-3. Silence >1.5s → phrase is processed and the speaker plays the response
+Binary WebSocket messages: `[1 byte type][4 bytes length BE][payload]`
+
+- `0x01` (AUDIO): PCM/WAV
+- `0x02` (TEXT): `VOICE_START`, `VOICE_END`, `PLAY_TEXT:...`, `PLAY_URL:...`
