@@ -13,22 +13,23 @@ from server.llm_handler import _client as groq
 
 log = logging.getLogger(__name__)
 
-AUDIO_DIR: str = tempfile.mkdtemp()
+_audio_dir: str | None = None
 _http_started: bool = False
 
 
 class _SilentHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args: object, **kwargs: object) -> None:
-        super().__init__(*args, directory=AUDIO_DIR, **kwargs)  # type: ignore[arg-type]
+        super().__init__(*args, directory=_audio_dir, **kwargs)  # type: ignore[arg-type]
 
     def log_message(self, format: str, *args: object) -> None:
         pass
 
 
 def _ensure_http() -> None:
-    global _http_started
+    global _http_started, _audio_dir
     if _http_started:
         return
+    _audio_dir = tempfile.mkdtemp()
     threading.Thread(
         target=lambda: http.server.HTTPServer(
             ("0.0.0.0", config.HTTP_PORT), _SilentHandler
@@ -71,7 +72,7 @@ async def generate_and_send(text: str, websocket: WebSocketServerProtocol) -> No
                     response_format="wav",
                 )
                 filename = f"resp_{i}.wav"
-                path = os.path.join(AUDIO_DIR, filename)
+                path = os.path.join(_audio_dir, filename)
                 with open(path, "wb") as f:
                     f.write(response.content)
                 urls.append(
