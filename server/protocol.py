@@ -41,6 +41,10 @@ def encode(msg_type: int, payload: bytes) -> bytes:
 
 
 def decode(data: bytes) -> tuple[int, bytes]:
+    if len(data) < HEADER_SIZE:
+        raise ValueError(
+            f"Message too short: {len(data)} bytes, need at least {HEADER_SIZE}"
+        )
     msg_type = data[0]
     length = struct.unpack(">I", data[1:5])[0]
     payload = data[5:5 + length]
