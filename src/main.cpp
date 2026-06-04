@@ -39,7 +39,7 @@ unsigned long last_voice_time = 0;
 
 bool playing = false;
 unsigned long play_start_time = 0;
-unsigned long play_end_time = 0;
+
 #define PLAY_TIMEOUT 15000
 
 #define MAX_QUEUE 8
@@ -133,7 +133,6 @@ void play(String payload) {
 
 static void on_audio_end() {
     playing = false;
-    play_end_time = millis();
 }
 void audio_eof_mp3(const char*)    { on_audio_end(); }
 void audio_eof_stream(const char*) { on_audio_end(); }
@@ -274,6 +273,6 @@ void loop() {
             }
         }
     } else {
-        delay(5);
+        yield();
     }
 }

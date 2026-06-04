@@ -5,11 +5,11 @@ import tempfile
 import http.server
 import threading
 
-from groq import Groq
 from websockets.server import WebSocketServerProtocol
 
 from server import config
 from server import protocol
+from server.llm_handler import _client as groq
 
 log = logging.getLogger(__name__)
 
@@ -60,12 +60,11 @@ async def generate_and_send(text: str, websocket: WebSocketServerProtocol) -> No
 
     if config.TTS_LANG == "en":
         _ensure_http()
-        client = Groq(api_key=config.GROQ_API_KEY)
         fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
         urls: list[str] = []
         for i, frag in enumerate(fragments):
             try:
-                response = client.audio.speech.create(
+                response = groq.audio.speech.create(
                     model="canopylabs/orpheus-v1-english",
                     voice=config.TTS_VOICE,
                     input=frag,

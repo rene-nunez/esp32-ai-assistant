@@ -20,7 +20,6 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 transcriber = Transcriber()
-transcriber.ensure_loaded()
 
 
 async def handle_audio(websocket: WebSocketServerProtocol) -> None:
