@@ -1,20 +1,17 @@
 import time
 import logging
 
-from groq import Groq
-
 from server import config
+from server.client import groq
 
 log = logging.getLogger(__name__)
-
-_client = Groq(api_key=config.GROQ_API_KEY)
 
 
 def ask(text: str) -> str:
     log.info("Asking the LLM...")
     start = time.time()
 
-    chat_completion = _client.chat.completions.create(
+    chat_completion = groq.chat.completions.create(
         messages=[config.SYSTEM_PROMPT, {"role": "user", "content": text}],
         model=config.LLM_MODEL,
         temperature=config.LLM_TEMPERATURE,

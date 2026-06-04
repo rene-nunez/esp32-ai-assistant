@@ -9,7 +9,7 @@ from websockets.server import WebSocketServerProtocol
 
 from server import config
 from server import protocol
-from server.llm_handler import _client as groq
+from server.client import groq
 
 log = logging.getLogger(__name__)
 
