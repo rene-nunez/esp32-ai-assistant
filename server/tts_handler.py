@@ -82,10 +82,17 @@ async def generate_and_send(text: str, websocket: WebSocketServerProtocol) -> No
                 log.error("Orpheus fragment %d error: %s", i, e)
 
         log.info("TTS latency: %.2fs", time.time() - t)
-        for url in urls:
-            msg = protocol.encode_text(f"PLAY_URL:{url}")
+
+        if not urls:
+            msg = protocol.encode_text(f"{protocol.CMD_PLAY_TEXT}I'm sorry, please try again.")
             await websocket.send(msg)
+        else:
+            for url in urls:
+                msg = protocol.encode_text(f"PLAY_URL:{url}")
+                await websocket.send(msg)
     else:
-        msg = protocol.encode_text(f"{protocol.CMD_PLAY_TEXT}{text}")
-        await websocket.send(msg)
+        fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
+        for frag in fragments:
+            msg = protocol.encode_text(f"{protocol.CMD_PLAY_TEXT}{frag}")
+            await websocket.send(msg)
         log.info("Total latency: %.2fs", time.time() - t)
