@@ -3,11 +3,11 @@
 using namespace websockets;
 WebsocketsClient ws_client;
 
+static String ws_url;
 static unsigned long last_ws_attempt = 0;
-static const char* WS_URL = "ws://172.20.10.3:8765";
 
 static bool connect_websocket() {
-    if (ws_client.connect(WS_URL)) {
+    if (ws_client.connect(ws_url)) {
         Serial.println("WebSocket OK");
         return true;
     }
@@ -33,7 +33,11 @@ static void process_ws_message(const uint8_t* data, size_t len) {
     }
 }
 
-void network_init() {
+void network_init(const char* host, int port) {
+    ws_url = "ws://";
+    ws_url += host;
+    ws_url += ":";
+    ws_url += port;
     ws_client.onMessage([](WebsocketsMessage msg) {
         if (msg.isBinary()) {
             process_ws_message(
