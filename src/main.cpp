@@ -1,36 +1,10 @@
-#include <Arduino.h>
-#include <WiFi.h>
+#include "config.h"
 #include <WiFiManager.h>
-#include <ArduinoWebsockets.h>
-#include <driver/i2s.h>
 #include "Audio.h"
 
-const char* websockets_connection_string = "ws://172.20.10.3:8765";
-
 using namespace websockets;
-WebsocketsClient client;
+WebsocketsClient ws_client;
 Audio audio;
-
-#define MIC_SCK  32
-#define MIC_WS   33
-#define MIC_SD   35
-#define I2S_MIC  I2S_NUM_1
-
-#define AMP_BCLK  26
-#define AMP_LRC   27
-#define AMP_DOUT  25
-
-#define PIN_BTN 17
-#define DEBOUNCE_MS 50
-#define pin_led 15
-
-// Protocol v2
-#define MSG_AUDIO 0x01
-#define MSG_TEXT  0x02
-
-// VAD
-#define VAD_ENERGY_THRESHOLD 500
-#define SILENCE_TIMEOUT_MS   1500
 
 bool listening = false;
 bool last_btn_state = false;
@@ -40,36 +14,7 @@ unsigned long last_voice_time = 0;
 bool playing = false;
 unsigned long play_start_time = 0;
 
-#define PLAY_TIMEOUT 15000
-
-#define MAX_QUEUE 8
-String queue[MAX_QUEUE];
-int queue_head = 0;
-int queue_tail = 0;
-
 unsigned long last_ws_attempt = 0;
-#define WS_RETRY_MS 3000
-
-void send_protocol(uint8_t type, const uint8_t* payload, size_t len) {
-    uint8_t header[5];
-    header[0] = type;
-    header[1] = (len >> 24) & 0xFF;
-    header[2] = (len >> 16) & 0xFF;
-    header[3] = (len >>  8) & 0xFF;
-    header[4] = len & 0xFF;
-
-    size_t total = 5 + len;
-    uint8_t* buf = (uint8_t*)malloc(total);
-    if (!buf) return;
-    memcpy(buf, header, 5);
-    memcpy(buf + 5, payload, len);
-    client.sendBinary((const char*)buf, total);
-    free(buf);
-}
-
-void send_control(const char* command) {
-    send_protocol(MSG_TEXT, (const uint8_t*)command, strlen(command));
-}
 
 int16_t energy_chunk(const int16_t* samples, size_t count) {
     int32_t sum = 0;
@@ -85,7 +30,7 @@ void read_button() {
     bool btn_now = (digitalRead(PIN_BTN) == LOW);
     if (btn_now && !last_btn_state && millis() - last_btn_change > DEBOUNCE_MS) {
         listening = !listening;
-        digitalWrite(pin_led, listening);
+        digitalWrite(PIN_LED, listening);
         last_btn_change = millis();
         Serial.print(listening ? "Listening ON" : "Listening OFF");
 
@@ -99,17 +44,6 @@ void read_button() {
         }
     }
     last_btn_state = btn_now;
-}
-
-void enqueue(String s) {
-    int next = (queue_tail + 1) % MAX_QUEUE;
-    if (next != queue_head) { queue[queue_tail] = s; queue_tail = next; }
-}
-bool queue_empty() { return queue_head == queue_tail; }
-String dequeue() {
-    String s = queue[queue_head];
-    queue_head = (queue_head + 1) % MAX_QUEUE;
-    return s;
 }
 
 void play(String payload) {
@@ -143,7 +77,7 @@ void process_ws_message(const uint8_t* data, size_t len) {
     uint8_t type = data[0];
     uint32_t payload_len = ((uint32_t)data[1] << 24) |
                            ((uint32_t)data[2] << 16) |
-                           ((uint32_t)data[3] <<  8) |
+                           ((uint32_t)data[3] << 8) |
                            ((uint32_t)data[4]);
     if (5 + payload_len > len) return;
 
@@ -156,7 +90,7 @@ void process_ws_message(const uint8_t* data, size_t len) {
 }
 
 void register_callbacks() {
-    client.onMessage([](WebsocketsMessage msg) {
+    ws_client.onMessage([](WebsocketsMessage msg) {
         if (msg.isBinary()) {
             process_ws_message(
                 (const uint8_t*)msg.data().c_str(),
@@ -164,7 +98,7 @@ void register_callbacks() {
             );
         }
     });
-    client.onEvent([](WebsocketsEvent event, String data) {
+    ws_client.onEvent([](WebsocketsEvent event, String data) {
         if (event == WebsocketsEvent::ConnectionClosed) {
             Serial.println("WebSocket disconnected.");
         }
@@ -172,7 +106,7 @@ void register_callbacks() {
 }
 
 bool connect_websocket() {
-    if (client.connect(websockets_connection_string)) {
+    if (ws_client.connect("ws://172.20.10.3:8765")) {
         Serial.println("WebSocket OK");
         return true;
     }
@@ -182,7 +116,7 @@ bool connect_websocket() {
 void setup() {
     Serial.begin(115200);
     pinMode(PIN_BTN, INPUT_PULLUP);
-    pinMode(pin_led, OUTPUT);
+    pinMode(PIN_LED, OUTPUT);
 
     WiFiManager wm;
     wm.setConfigPortalTimeout(180);
@@ -226,8 +160,8 @@ void setup() {
 }
 
 void loop() {
-    if (client.available()) {
-        client.poll();
+    if (ws_client.available()) {
+        ws_client.poll();
         last_ws_attempt = 0;
     } else if (last_ws_attempt == 0 || millis() - last_ws_attempt > WS_RETRY_MS) {
         last_ws_attempt = millis();
@@ -268,7 +202,7 @@ void loop() {
                 Serial.println("Silence timeout — auto VOICE_END");
                 send_control("VOICE_END");
                 listening = false;
-                digitalWrite(pin_led, LOW);
+                digitalWrite(PIN_LED, LOW);
                 last_voice_time = 0;
             }
         }
