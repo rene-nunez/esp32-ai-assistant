@@ -1,25 +1,27 @@
 #include "config.h"
-#include <WiFiManager.h>
+#include <WiFi.h>
+
+#ifndef WIFI_SSID
+#error "WIFI_SSID not defined. Create .env from .env.example"
+#endif
 
 void setup() {
     Serial.begin(115200);
     Serial.println();
 
-    WiFiManagerParameter server_ip("server_ip", "Server IP", "172.20.10.3", 16);
-    WiFiManagerParameter server_port("server_port", "Server Port", "8765", 6);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-    WiFiManager wm;
-    wm.addParameter(&server_ip);
-    wm.addParameter(&server_port);
-    wm.setConfigPortalTimeout(180);
-
-    if (!wm.autoConnect("ESP32-Assistant")) {
-        Serial.println("WiFi not connected, restarting...");
-        ESP.restart();
+    Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
     }
-    Serial.println("WiFi OK");
+    Serial.println();
+    Serial.print("WiFi OK — IP: ");
+    Serial.println(WiFi.localIP());
 
-    network_init(server_ip.getValue(), atoi(server_port.getValue()));
+    network_init();
     audio_init();
     i2s_init();
     button_init();

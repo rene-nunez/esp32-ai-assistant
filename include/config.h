@@ -53,7 +53,7 @@ void button_tick();
 bool is_listening();
 void stop_listening();
 
-void network_init(const char* host, int port);
+void network_init();
 void network_tick();
 
 void vad_reset_timeout();
