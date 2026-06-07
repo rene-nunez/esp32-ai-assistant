@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 transcriber = Transcriber()
 
 
-async def handle_audio(websocket: ServerConnection) -> None:
+async def handle_audio(websocket: ServerConnection) -> None:      # pipeline: STT→LLM→TTS (sequential by data dependency)
     log.info("ESP32 Connected")
     audio_buffer: list[float] = []
     awaiting_phrase = False
@@ -74,7 +74,7 @@ async def _process_and_respond(
 
 async def main() -> None:
     async with websockets.serve(
-        handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None
+        handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None  # ESP32 can be silent minutes when idle
     ):
         log.info("Server ready on port %d", config.WS_PORT)
         await asyncio.Future()

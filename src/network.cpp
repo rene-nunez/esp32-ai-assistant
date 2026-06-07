@@ -8,7 +8,7 @@
 #define WS_PORT 8765
 #endif
 
-#define STRINGIFY(x) #x
+#define STRINGIFY(x) #x                                          // compile-time URL = no heap alloc
 #define TOSTRING(x) STRINGIFY(x)
 #define WS_URL "ws://" TOSTRING(SERVER_IP) ":" TOSTRING(WS_PORT)
 
@@ -67,9 +67,9 @@ void network_init() {
 
 void network_tick() {
     if (ws_client.available()) {
-        ws_client.poll();
+        ws_client.poll();                                        // non-blocking, called from main loop
         last_ws_attempt = 0;
-    } else if (last_ws_attempt == 0 || millis() - last_ws_attempt > WS_RETRY_MS) {
+    } else if (last_ws_attempt == 0 || millis() - last_ws_attempt > WS_RETRY_MS) { // retry every 3s
         last_ws_attempt = millis();
         Serial.println("Reconnecting WebSocket...");
         connect_websocket();

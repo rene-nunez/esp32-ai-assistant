@@ -13,7 +13,7 @@ void setup() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
     Serial.print("Connecting to WiFi");
-    int timeout = 30;
+    int timeout = 30;                                           // 15s max — avoids infinite hang
     while (WiFi.status() != WL_CONNECTED && timeout > 0) {
         delay(500);
         timeout--;
@@ -36,18 +36,18 @@ void setup() {
 }
 
 void loop() {
-    network_tick();
-    audio_tick();
+    network_tick();                                             // keep WebSocket alive
+    audio_tick();                                               // keep TTS playback alive
 
-    if (WiFi.status() != WL_CONNECTED) return;
+    if (WiFi.status() != WL_CONNECTED) return;                  // auto-reconnect in bg
 
-    if (is_playing()) return;
+    if (is_playing()) return;                                   // skip VAD while TTS playing (echo)
 
     button_tick();
 
     if (is_listening()) {
         vad_tick();
     } else {
-        yield();
+        yield();                                                // cooperative, non-blocking
     }
 }

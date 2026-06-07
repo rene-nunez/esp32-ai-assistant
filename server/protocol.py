@@ -1,20 +1,7 @@
-"""Binary protocol v2.
+"""Binary protocol v2. [1B type][4B BE len][payload]. 0x01=audio 0x02=text.
+Controls: VOICE_START / VOICE_END / PLAY_TEXT:<text>
 
-Each WebSocket message format:
-  [1 byte type][4 bytes payload length (big-endian)][N bytes payload]
-
-Types:
-  0x01 = MSG_AUDIO — PCM audio binary
-  0x02 = MSG_TEXT  — UTF-8 control text
-
-Control messages (MSG_TEXT):
-  Client -> Server:
-    "VOICE_START" — start of speech (toggle ON or VAD detected voice)
-    "VOICE_END"   — end of speech (toggle OFF or silence timeout)
-
-  Server -> Client:
-    "PLAY_TEXT:<text>" — play with audio.connecttospeech()
-"""
+Binary vs JSON: ESP32 has no heap for JSON parsing; bit-shift header = zero alloc."""
 
 import struct
 from enum import IntEnum

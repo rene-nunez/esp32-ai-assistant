@@ -4,9 +4,9 @@ static String queue[MAX_QUEUE];
 static int head = 0;
 static int tail = 0;
 
-void enqueue(String s) {
+void enqueue(String s) {                                         // bounded ring buffer — predictable RAM
     int next = (tail + 1) % MAX_QUEUE;
-    if (next != head) {
+    if (next != head) {                                          // drops newest silently on full (beats OOM)
         queue[tail] = s;
         tail = next;
     }

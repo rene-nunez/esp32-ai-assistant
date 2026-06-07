@@ -6,7 +6,7 @@ void vad_reset_timeout() {
     last_voice_time = 0;
 }
 
-static int16_t energy_chunk(const int16_t* samples, size_t count) {
+static int16_t energy_chunk(const int16_t* samples, size_t count) { // energy-based VAD — no ML lib (saves RAM)
     int32_t sum = 0;
     for (size_t i = 0; i < count; i++) {
         int32_t val = samples[i];
@@ -17,8 +17,8 @@ static int16_t energy_chunk(const int16_t* samples, size_t count) {
 }
 
 void vad_tick() {
-    int16_t samples[512];
-    int bytes_read = i2s_read_chunk(samples, 512);
+    int16_t samples[512];                                        // 1024 bytes, fits in 8 kB task stack
+    int bytes_read = i2s_read_chunk(samples, 512);               // ~32 ms at 16 kHz
 
     if (bytes_read > 0) {
         int count = bytes_read / (int)sizeof(int16_t);

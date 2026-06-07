@@ -10,7 +10,7 @@ bool is_playing() {
 }
 
 void audio_init() {
-    audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);
+    audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);               // I2S_NUM_0 (amp) avoids conflict with mic I2S_NUM_1
     audio.setVolume(24);
     Serial.println("Audio OK");
 }
@@ -26,12 +26,12 @@ void audio_tick() {
         Serial.print("Playing: ");
         Serial.println(payload);
 
-        if (payload.startsWith("PLAY_TEXT:")) {
-            audio.connecttospeech(payload.substring(10).c_str(), "en");
+        if (payload.startsWith("PLAY_TEXT:")) {                 // only PLAY_TEXT: — no HTTP/WAV server needed
+            audio.connecttospeech(payload.substring(10).c_str(), "en"); // ESP32 fetches Google TTS natively
         }
     }
 
-    if (playing && (millis() - play_start_time > PLAY_TIMEOUT)) {
+    if (playing && (millis() - play_start_time > PLAY_TIMEOUT)) { // 15s safety valve
         Serial.println("Playback TIMEOUT — releasing");
         audio.stopSong();
         playing = false;

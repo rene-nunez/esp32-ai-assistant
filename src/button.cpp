@@ -5,7 +5,7 @@ static bool last_btn_state = false;
 static unsigned long last_btn_change = 0;
 
 void button_init() {
-    pinMode(PIN_BTN, INPUT_PULLUP);
+    pinMode(PIN_BTN, INPUT_PULLUP);                              // LOW = pressed, no external resistor
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
 }
@@ -19,7 +19,7 @@ void button_tick() {
 
         Serial.print(listening ? "Listening ON" : "Listening OFF");
 
-        if (listening) {
+        if (listening) {                                         // toggle mode — frees hands during speech
             vad_reset_timeout();
             send_control("VOICE_START");
             Serial.println(" — VOICE_START");

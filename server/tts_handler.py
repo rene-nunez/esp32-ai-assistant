@@ -9,8 +9,8 @@ from server import protocol
 log = logging.getLogger(__name__)
 
 
-def split_text(text: str, max_chars: int) -> list[str]:
-    words = text.split()
+def split_text(text: str, max_chars: int) -> list[str]:           # fragment at 190 chars — connecttospeech() uses HTTPS GET (long URLs truncated)
+    words = text.split()                                          # word-boundary split for natural prosody
     fragments: list[str] = []
     current = ""
     for word in words:
@@ -25,7 +25,7 @@ def split_text(text: str, max_chars: int) -> list[str]:
     return fragments if fragments else [text[:max_chars]]
 
 
-async def generate_and_send(text: str, websocket: ServerConnection) -> None:
+async def generate_and_send(text: str, websocket: ServerConnection) -> None:  # ESP32 fetches Google TTS natively, server only sends text
     t = time.time()
 
     fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
