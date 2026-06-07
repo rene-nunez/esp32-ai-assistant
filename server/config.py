@@ -23,7 +23,7 @@ VAD_MIN_SPEECH_MS: Final[int] = 250
 NO_SPEECH_THRESHOLD: Final[float] = 0.7
 NO_SPEECH_PROB_THRESHOLD: Final[float] = 0.5
 
-VOLUME_MIN_THRESHOLD: Final[float] = 0.01
+VOLUME_MIN_THRESHOLD: Final[float] = 0.005  # lower = more sensitive to quiet speech
 
 # LLM
 LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")
@@ -36,6 +36,7 @@ SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
     "content": (
         "You are a smart voice assistant connected to an ESP32. "
-        "Keep responses very short and useful. Max 2 sentences."
+        "Keep responses very short and useful. Max 2 sentences. "
+        "Always respond in English."
     ),
 }

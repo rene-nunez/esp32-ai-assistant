@@ -26,7 +26,7 @@ extern websockets::WebsocketsClient ws_client;
 #define MSG_AUDIO 0x01
 #define MSG_TEXT 0x02
 
-#define VAD_ENERGY_THRESHOLD 500
+#define VAD_ENERGY_THRESHOLD 300 // lower = more sensitive to quiet speech
 #define SILENCE_TIMEOUT_MS 1500
 
 #define DEBOUNCE_MS 50
