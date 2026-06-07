@@ -73,11 +73,10 @@ async def _process_and_respond(
 
 
 async def main() -> None:
-    tts_mode = "Orpheus (English)" if config.TTS_LANG == "en" else "Google TTS (Spanish)"
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None
     ):
-        log.info("Server ready on port %d. TTS mode: %s", config.WS_PORT, tts_mode)
+        log.info("Server ready on port %d", config.WS_PORT)
         await asyncio.Future()
 
 

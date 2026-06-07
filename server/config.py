@@ -1,6 +1,5 @@
 import os
 from typing import Final
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,11 +9,7 @@ GROQ_API_KEY: Final[str | None] = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
     raise RuntimeError("GROQ_API_KEY not set. Create a .env file from .env.example")
 
-# Servidor
-SERVER_IP: Final[str] = os.getenv("SERVER_IP", "172.20.10.2")
 WS_PORT: Final[int] = int(os.getenv("SERVER_WS_PORT", "8765"))
-HTTP_PORT: Final[int] = int(os.getenv("SERVER_HTTP_PORT", "8766"))
-TTS_LANG: Final[str] = os.getenv("TTS_LANG", "es")
 
 # Whisper
 WHISPER_MODEL: Final[str] = os.getenv("WHISPER_MODEL", "base")
@@ -36,9 +31,7 @@ LLM_MODEL: Final[str] = "groq/compound"
 LLM_TEMPERATURE: Final[float] = 0.7
 LLM_MAX_TOKENS: Final[int] = 300
 
-# TTS Orpheus
 TTS_MAX_CHARS: Final[int] = 190
-TTS_VOICE: Final[str] = "diana"
 
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
