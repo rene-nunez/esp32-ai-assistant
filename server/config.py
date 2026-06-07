@@ -19,7 +19,7 @@ WHISPER_COMPUTE_TYPE: Final[str] = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
 # Whisper VAD
 VAD_MIN_SILENCE_MS: Final[int] = 800
 VAD_THRESHOLD: Final[float] = 0.6
-VAD_MIN_SPEECH_MS: Final[int] = 250
+VAD_MIN_SPEECH_MS: Final[int] = 150  # lower = less aggressive filtering of short chunks
 NO_SPEECH_THRESHOLD: Final[float] = 0.7
 NO_SPEECH_PROB_THRESHOLD: Final[float] = 0.5
 
@@ -35,8 +35,7 @@ TTS_MAX_CHARS: Final[int] = 2000  # single request for most responses — avoids
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
     "content": (
-        "You are a smart voice assistant connected to an ESP32. "
-        "Keep responses very short and useful. Max 2 sentences. "
-        "Always respond in English."
+        "You are a smart voice assistant. Keep responses short. "
+        "Max 2 sentences. Always respond in English."
     ),
 }
