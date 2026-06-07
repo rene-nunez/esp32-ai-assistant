@@ -1,20 +1,19 @@
 Import("env")
-import os.path
+import os
 
 
-def load_env():
-    env_path = os.path.join(env.subst("$PROJECT_DIR"), ".env")
-    if not os.path.isfile(env_path):
-        return
-    for line in open(env_path):
+env_path = os.path.join(env.subst("$PROJECT_DIR"), ".env")
+print(f"extra_script: looking for .env at {env_path}")
+print(f"extra_script: file exists = {os.path.isfile(env_path)}")
+
+if os.path.isfile(env_path):
+    for line in open(env_path, encoding="utf-8"):
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, val = line.partition("=")
         os.environ[key.strip()] = val.strip().strip('"').strip("'")
 
-
-load_env()
 
 FLAGS_MAP = {
     "WIFI_SSID": "WIFI_SSID",
@@ -26,7 +25,8 @@ FLAGS_MAP = {
 for env_key, flag_name in FLAGS_MAP.items():
     val = os.environ.get(env_key)
     if val:
-        if val.isdigit():
-            env.Append(BUILD_FLAGS=[f"-D{flag_name}={val}"])
-        else:
-            env.Append(BUILD_FLAGS=[f'-D{flag_name}="{val}"'])
+        flag = f"-D{flag_name}={val}" if val.isdigit() else f'-D{flag_name}="{val}"'
+        print(f"extra_script: adding {flag}")
+        env.Append(BUILD_FLAGS=[flag])
+    else:
+        print(f"extra_script: WARNING {env_key} not found in .env")
