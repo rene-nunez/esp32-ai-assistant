@@ -28,14 +28,14 @@ VOLUME_MIN_THRESHOLD: Final[float] = 0.005  # lower = more sensitive to quiet sp
 # LLM
 LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")
 LLM_TEMPERATURE: Final[float] = 0.7
-LLM_MAX_TOKENS: Final[int] = 300
+LLM_MAX_TOKENS: Final[int] = 80
 
-TTS_MAX_CHARS: Final[int] = 2000  # single request for most responses — avoids gaps between fragments
+TTS_MAX_CHARS: Final[int] = 300  # Google TTS URL limit ~200 chars per fragment
 
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
     "content": (
-        "You are a smart voice assistant. Keep responses short. "
-        "Max 2 sentences. Always respond in English."
+        "You are a smart voice assistant. Keep responses very short. "
+        "Max 2 short sentences. Always respond in English."
     ),
 }

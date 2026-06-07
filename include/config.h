@@ -30,7 +30,7 @@ extern websockets::WebsocketsClient ws_client;
 #define SILENCE_TIMEOUT_MS 1500
 
 #define DEBOUNCE_MS 50
-#define PLAY_TIMEOUT 15000
+#define PLAY_TIMEOUT 30000
 #define WS_RETRY_MS 3000
 #define MAX_QUEUE 8
 
