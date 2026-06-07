@@ -13,9 +13,15 @@ void setup() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
     Serial.print("Connecting to WiFi");
-    while (WiFi.status() != WL_CONNECTED) {
+    int timeout = 30;
+    while (WiFi.status() != WL_CONNECTED && timeout > 0) {
         delay(500);
+        timeout--;
         Serial.print(".");
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("\nWiFi timeout — restarting");
+        ESP.restart();
     }
     Serial.println();
     Serial.print("WiFi OK — IP: ");
@@ -32,6 +38,8 @@ void setup() {
 void loop() {
     network_tick();
     audio_tick();
+
+    if (WiFi.status() != WL_CONNECTED) return;
 
     if (is_playing()) return;
 

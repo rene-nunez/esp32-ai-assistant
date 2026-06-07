@@ -35,7 +35,11 @@ extern websockets::WebsocketsClient ws_client;
 #define MAX_QUEUE 8
 
 // User secrets (copy secrets.h.example -> secrets.h)
+#if __has_include("secrets.h")
 #include "secrets.h"
+#else
+#error "secrets.h not found. Copy include/secrets.h.example -> include/secrets.h"
+#endif
 
 // Functions
 void send_protocol(uint8_t type, const uint8_t* payload, size_t len);

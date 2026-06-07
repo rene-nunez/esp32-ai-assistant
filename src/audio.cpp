@@ -27,13 +27,7 @@ void audio_tick() {
         Serial.println(payload);
 
         if (payload.startsWith("PLAY_TEXT:")) {
-            audio.connecttospeech(payload.substring(10).c_str(), "es");
-        } else if (payload.startsWith("PLAY_URL:")) {
-            audio.connecttohost(payload.substring(9).c_str());
-        } else if (payload.startsWith("http")) {
-            audio.connecttohost(payload.c_str());
-        } else {
-            audio.connecttospeech(payload.c_str(), "es");
+            audio.connecttospeech(payload.substring(10).c_str(), "en");
         }
     }
 
