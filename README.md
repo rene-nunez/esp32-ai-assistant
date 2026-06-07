@@ -2,6 +2,8 @@
 
 An open-source voice assistant that combines an ESP32 device with a local AI backend. Speech is captured on the ESP32, transcribed with Whisper, processed by Groq, and played back through a speaker using text-to-speech.
 
+![hardware](./assets/hardware.jpeg)
+
 ## Features
 
 * Real-time voice capture on ESP32
