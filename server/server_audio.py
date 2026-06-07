@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import numpy as np
 import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.server import ServerConnection
 
 from server import config
 from server import protocol
@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 transcriber = Transcriber()
 
 
-async def handle_audio(websocket: WebSocketServerProtocol) -> None:
+async def handle_audio(websocket: ServerConnection) -> None:
     log.info("ESP32 Connected")
     audio_buffer: list[float] = []
     awaiting_phrase = False
@@ -58,7 +58,7 @@ async def handle_audio(websocket: WebSocketServerProtocol) -> None:
 
 async def _process_and_respond(
     audio_data: Sequence[float],
-    websocket: WebSocketServerProtocol,
+    websocket: ServerConnection,
 ) -> None:
     audio_np = np.array(audio_data, dtype=np.float32)
 

@@ -35,7 +35,7 @@ class Transcriber:
         segments, _ = self._model.transcribe(
             audio_norm,
             beam_size=5,
-            language="es",
+            language="en",
             vad_filter=True,
             vad_parameters=dict(
                 min_silence_duration_ms=config.VAD_MIN_SILENCE_MS,
@@ -48,7 +48,7 @@ class Transcriber:
 
         text = ""
         for segment in segments:
-            if segment.no_speech_prob < 0.5 and segment.text.strip():
+            if segment.no_speech_prob < config.NO_SPEECH_PROB_THRESHOLD and segment.text.strip():
                 text += segment.text + " "
 
         return text.strip()

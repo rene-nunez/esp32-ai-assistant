@@ -21,9 +21,8 @@ VAD_MIN_SILENCE_MS: Final[int] = 800
 VAD_THRESHOLD: Final[float] = 0.6
 VAD_MIN_SPEECH_MS: Final[int] = 250
 NO_SPEECH_THRESHOLD: Final[float] = 0.7
+NO_SPEECH_PROB_THRESHOLD: Final[float] = 0.5
 
-# Audio
-AUDIO_RATE: Final[int] = 16000
 VOLUME_MIN_THRESHOLD: Final[float] = 0.01
 
 # LLM

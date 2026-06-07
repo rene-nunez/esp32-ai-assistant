@@ -4,7 +4,7 @@ Each WebSocket message format:
   [1 byte type][4 bytes payload length (big-endian)][N bytes payload]
 
 Types:
-  0x01 = MSG_AUDIO — PCM/WAV audio binary
+  0x01 = MSG_AUDIO — PCM audio binary
   0x02 = MSG_TEXT  — UTF-8 control text
 
 Control messages (MSG_TEXT):
@@ -14,7 +14,6 @@ Control messages (MSG_TEXT):
 
   Server -> Client:
     "PLAY_TEXT:<text>" — play with audio.connecttospeech()
-    "PLAY_URL:<url>"   — play Orpheus WAV served via HTTP
 """
 
 import struct
@@ -31,7 +30,6 @@ class MessageType(IntEnum):
 CMD_VOICE_START = "VOICE_START"
 CMD_VOICE_END = "VOICE_END"
 CMD_PLAY_TEXT = "PLAY_TEXT:"
-CMD_PLAY_URL = "PLAY_URL:"
 
 
 def encode(msg_type: int, payload: bytes) -> bytes:
@@ -47,6 +45,11 @@ def decode(data: bytes) -> tuple[int, bytes]:
         )
     msg_type = data[0]
     length = struct.unpack(">I", data[1:5])[0]
+    if HEADER_SIZE + length > len(data):
+        raise ValueError(
+            f"Header declares payload of {length} bytes but message has only "
+            f"{len(data) - HEADER_SIZE} remaining"
+        )
     payload = data[5:5 + length]
     return msg_type, payload
 

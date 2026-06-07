@@ -1,7 +1,7 @@
 import time
 import logging
 
-from websockets.server import WebSocketServerProtocol
+from websockets.server import ServerConnection
 
 from server import config
 from server import protocol
@@ -9,7 +9,7 @@ from server import protocol
 log = logging.getLogger(__name__)
 
 
-def split_text(text: str, max_chars: int = 190) -> list[str]:
+def split_text(text: str, max_chars: int) -> list[str]:
     words = text.split()
     fragments: list[str] = []
     current = ""
@@ -25,7 +25,7 @@ def split_text(text: str, max_chars: int = 190) -> list[str]:
     return fragments if fragments else [text[:max_chars]]
 
 
-async def generate_and_send(text: str, websocket: WebSocketServerProtocol) -> None:
+async def generate_and_send(text: str, websocket: ServerConnection) -> None:
     t = time.time()
 
     fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
