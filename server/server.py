@@ -63,6 +63,7 @@ async def _process_and_respond(
     text = transcriber.transcribe(audio_np)
     if not text:
         log.info("Audio detected but not clear speech.")
+        await websocket.send("Sorry, I didn't catch that. Please repeat.")
         return
 
     log.info("[Voice]: %s", text)
