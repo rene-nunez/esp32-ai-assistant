@@ -8,6 +8,13 @@ void button_init() {
     pinMode(PIN_BTN, INPUT_PULLUP); // LOW = pressed, no external resistor
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
+
+    // if button was pressed during boot (e.g. after brownout), wait for release
+    // to prevent immediate toggle back to listening → brownout loop
+    unsigned long start = millis();
+    while (digitalRead(PIN_BTN) == LOW && millis() - start < 1000) {
+        delay(10);
+    }
 }
 
 void button_tick() {

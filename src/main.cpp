@@ -1,13 +1,25 @@
 #include "config.h"
 #include <WiFi.h>
+#include <esp_system.h>
 
 #ifndef WIFI_SSID
     #error "WIFI_SSID not defined. Copy include/secrets.h.example to include/secrets.h"
 #endif
 
+static void print_reset_reason() {
+    switch (esp_reset_reason()) {
+        case ESP_RST_BROWNOUT: Serial.println("Reset: brownout"); break;
+        case ESP_RST_POWERON:  Serial.println("Reset: power-on"); break;
+        case ESP_RST_SW:       Serial.println("Reset: software"); break;
+        case ESP_RST_PANIC:    Serial.println("Reset: panic"); break;
+        case ESP_RST_WDT:      Serial.println("Reset: watchdog"); break;
+        default: break;
+    }
+}
+
 void setup() {
-    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector — prevents reset loop
     Serial.begin(115200);
+    print_reset_reason();
     Serial.println();
 
     WiFi.mode(WIFI_STA);
