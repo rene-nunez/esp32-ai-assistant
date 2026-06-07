@@ -42,7 +42,7 @@ void loop() {
     network_tick(); // keep WebSocket alive
     audio_tick(); // keep TTS playback alive
 
-    if (WiFi.status() != WL_CONNECTED) return; // auto-reconnect in b
+    if (WiFi.status() != WL_CONNECTED) return; // auto-reconnect in bg
     if (is_playing()) return; // skip VAD while TTS playing (echo)
 
     button_tick();

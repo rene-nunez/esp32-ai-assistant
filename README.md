@@ -28,7 +28,7 @@ ESP32 ←──WebSocket binary────────────────�
 python -m venv .venv
 .venv\Scripts\activate      # or source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env        # edit GROQ_API_KEY
+cp .env.example .env        # edit GROQ_API_KEY, optionally LLM_MODEL
 python -m server.server_audio
 ```
 

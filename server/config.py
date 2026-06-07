@@ -16,7 +16,7 @@ WHISPER_MODEL: Final[str] = os.getenv("WHISPER_MODEL", "base")
 WHISPER_DEVICE: Final[str] = os.getenv("WHISPER_DEVICE", "cpu")
 WHISPER_COMPUTE_TYPE: Final[str] = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
 
-# VAD (servidor — Whisper VAD)
+# Whisper VAD
 VAD_MIN_SILENCE_MS: Final[int] = 800
 VAD_THRESHOLD: Final[float] = 0.6
 VAD_MIN_SPEECH_MS: Final[int] = 250
@@ -26,7 +26,7 @@ NO_SPEECH_PROB_THRESHOLD: Final[float] = 0.5
 VOLUME_MIN_THRESHOLD: Final[float] = 0.01
 
 # LLM
-LLM_MODEL: Final[str] = "groq/compound"
+LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")
 LLM_TEMPERATURE: Final[float] = 0.7
 LLM_MAX_TOKENS: Final[int] = 300
 
