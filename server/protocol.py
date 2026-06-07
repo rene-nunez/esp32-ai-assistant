@@ -1,6 +1,7 @@
 """
 Binary protocol v2. [1B type][4B BE len][payload]. 0x01=audio 0x02=text.
-Controls: VOICE_START / VOICE_END / PLAY_TEXT:<text>
+Controls (binary MSG_TEXT): VOICE_START / VOICE_END
+TTS text is sent as raw WebSocket TEXT frames.
 
 Binary vs JSON: ESP32 has no heap for JSON parsing; bit-shift header = zero alloc.
 """

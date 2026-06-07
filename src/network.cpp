@@ -25,7 +25,7 @@ static bool connect_websocket() {
     return false;
 }
 
-static void process_ws_message(const uint8_t* data, size_t len) {
+static void process_ws_binary(const uint8_t* data, size_t len) {
     if (len < 5) return;
 
     uint8_t type = data[0];
@@ -35,7 +35,7 @@ static void process_ws_message(const uint8_t* data, size_t len) {
 
     if (type == MSG_TEXT) {
         String text = String((const char*)(data + 5), payload_len);
-        Serial.print("Received message: ");
+        Serial.print("Received control: ");
         Serial.println(text);
         enqueue(text);
     }
@@ -43,8 +43,16 @@ static void process_ws_message(const uint8_t* data, size_t len) {
 
 void network_init() {
     ws_client.onMessage([](WebsocketsMessage msg) {
-        if (msg.isBinary()) {
-            process_ws_message(
+        if (msg.isText()) {
+            String text = msg.data();
+            text.trim();
+            if (text.length() > 0) {
+                Serial.print("Received: ");
+                Serial.println(text);
+                enqueue(text);
+            }
+        } else if (msg.isBinary()) {
+            process_ws_binary(
                 (const uint8_t*)msg.data().c_str(),
                 msg.data().length()
             );

@@ -26,9 +26,7 @@ void audio_tick() {
         Serial.print("Playing: ");
         Serial.println(payload);
 
-        if (payload.startsWith("PLAY_TEXT:")) { // only PLAY_TEXT: — no HTTP/WAV server needed
-            audio.connecttospeech(payload.substring(10).c_str(), "en"); // ESP32 fetches Google TTS natively
-        }
+        audio.connecttospeech(payload.c_str(), "en");
     }
 
     if (playing && (millis() - play_start_time > PLAY_TIMEOUT)) { // 15s safety valve

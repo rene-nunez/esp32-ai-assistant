@@ -4,7 +4,6 @@ import logging
 from websockets.server import ServerConnection
 
 from server import config
-from server import protocol
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +27,6 @@ async def generate_and_send(text: str, websocket: ServerConnection) -> None: # E
 
     fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
     for frag in fragments:
-        msg = protocol.encode_text(f"{protocol.CMD_PLAY_TEXT}{frag}")
-        await websocket.send(msg)
+        await websocket.send(frag)
 
     log.info("Total latency: %.2fs", time.time() - t)
