@@ -5,13 +5,14 @@ static bool last_btn_state = false;
 static unsigned long last_btn_change = 0;
 
 void button_init() {
-    pinMode(PIN_BTN, INPUT_PULLUP);                              // LOW = pressed, no external resistor
+    pinMode(PIN_BTN, INPUT_PULLUP); // LOW = pressed, no external resistor
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
 }
 
 void button_tick() {
     bool btn_now = (digitalRead(PIN_BTN) == LOW);
+
     if (btn_now && !last_btn_state && millis() - last_btn_change > DEBOUNCE_MS) {
         listening = !listening;
         digitalWrite(PIN_LED, listening);
@@ -19,7 +20,8 @@ void button_tick() {
 
         Serial.print(listening ? "Listening ON" : "Listening OFF");
 
-        if (listening) {                                         // toggle mode — frees hands during speech
+        // toggle mode, frees hands during speech
+        if (listening) { 
             vad_reset_timeout();
             send_control("VOICE_START");
             Serial.println(" — VOICE_START");

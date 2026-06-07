@@ -4,12 +4,13 @@
 .vscode/launch.json
 .vscode/ipch
 
+include/secrets.h
+
 # Python
 __pycache__/
 *.pyc
 *.pyo
 .env
-include/secrets.h
 *.log
 dist/
 *.egg-info/

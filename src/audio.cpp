@@ -10,7 +10,7 @@ bool is_playing() {
 }
 
 void audio_init() {
-    audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);               // I2S_NUM_0 (amp) avoids conflict with mic I2S_NUM_1
+    audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT); // I2S_NUM_0 (amp) avoids conflict with mic I2S_NUM_1
     audio.setVolume(24);
     Serial.println("Audio OK");
 }
@@ -26,7 +26,7 @@ void audio_tick() {
         Serial.print("Playing: ");
         Serial.println(payload);
 
-        if (payload.startsWith("PLAY_TEXT:")) {                 // only PLAY_TEXT: — no HTTP/WAV server needed
+        if (payload.startsWith("PLAY_TEXT:")) { // only PLAY_TEXT: — no HTTP/WAV server needed
             audio.connecttospeech(payload.substring(10).c_str(), "en"); // ESP32 fetches Google TTS natively
         }
     }
@@ -42,7 +42,7 @@ static void on_audio_end() {
     playing = false;
 }
 
-void audio_eof_mp3(const char*)    { on_audio_end(); }
+void audio_eof_mp3(const char*) { on_audio_end(); }
 void audio_eof_stream(const char*) { on_audio_end(); }
 void audio_eof_speech(const char*) { on_audio_end(); }
 

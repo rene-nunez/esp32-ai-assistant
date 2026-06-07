@@ -34,14 +34,14 @@ extern websockets::WebsocketsClient ws_client;
 #define WS_RETRY_MS 3000
 #define MAX_QUEUE 8
 
-// User secrets (copy secrets.h.example -> secrets.h)
+// User secrets (copy secrets.h.example to secrets.h)
 #if __has_include("secrets.h")
-#include "secrets.h"
+    #include "secrets.h"
 #else
-#error "secrets.h not found. Copy include/secrets.h.example -> include/secrets.h"
+    #error "secrets.h not found. Copy include/secrets.h.example to include/secrets.h"
 #endif
 
-// Functions
+// Modules
 void send_protocol(uint8_t type, const uint8_t* payload, size_t len);
 void send_control(const char* command);
 

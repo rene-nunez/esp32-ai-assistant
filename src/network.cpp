@@ -1,14 +1,14 @@
 #include "config.h"
 
 #ifndef SERVER_IP
-#error "SERVER_IP not defined. Copy include/secrets.h.example -> include/secrets.h"
+    #error "SERVER_IP not defined. Copy include/secrets.h.example to include/secrets.h"
 #endif
 
 #ifndef WS_PORT
-#define WS_PORT 8765
+    #define WS_PORT 8765
 #endif
 
-#define STRINGIFY(x) #x                                          // compile-time URL = no heap alloc
+#define STRINGIFY(x) #x // compile-time URL = no heap alloc
 #define TOSTRING(x) STRINGIFY(x)
 #define WS_URL "ws://" TOSTRING(SERVER_IP) ":" TOSTRING(WS_PORT)
 
@@ -29,16 +29,13 @@ static void process_ws_message(const uint8_t* data, size_t len) {
     if (len < 5) return;
 
     uint8_t type = data[0];
-    uint32_t payload_len = ((uint32_t)data[1] << 24) |
-                           ((uint32_t)data[2] << 16) |
-                           ((uint32_t)data[3] << 8) |
-                           ((uint32_t)data[4]);
+    uint32_t payload_len = ((uint32_t)data[1] << 24) | ((uint32_t)data[2] << 16) | ((uint32_t)data[3] << 8) | ((uint32_t)data[4]);
 
     if (5 + payload_len > len) return;
 
     if (type == MSG_TEXT) {
         String text = String((const char*)(data + 5), payload_len);
-        Serial.print("Received TEXT: ");
+        Serial.print("Received message: ");
         Serial.println(text);
         enqueue(text);
     }
@@ -67,7 +64,7 @@ void network_init() {
 
 void network_tick() {
     if (ws_client.available()) {
-        ws_client.poll();                                        // non-blocking, called from main loop
+        ws_client.poll(); // non-blocking, called from main loop
         last_ws_attempt = 0;
     } else if (last_ws_attempt == 0 || millis() - last_ws_attempt > WS_RETRY_MS) { // retry every 3s
         last_ws_attempt = millis();
