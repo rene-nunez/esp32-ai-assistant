@@ -9,10 +9,10 @@
 static void print_reset_reason() {
     switch (esp_reset_reason()) {
         case ESP_RST_BROWNOUT: Serial.println("Reset: brownout"); break;
-        case ESP_RST_POWERON:  Serial.println("Reset: power-on"); break;
-        case ESP_RST_SW:       Serial.println("Reset: software"); break;
-        case ESP_RST_PANIC:    Serial.println("Reset: panic"); break;
-        case ESP_RST_WDT:      Serial.println("Reset: watchdog"); break;
+        case ESP_RST_POWERON: Serial.println("Reset: power-on"); break;
+        case ESP_RST_SW: Serial.println("Reset: software"); break;
+        case ESP_RST_PANIC: Serial.println("Reset: panic"); break;
+        case ESP_RST_WDT: Serial.println("Reset: watchdog"); break;
         default: break;
     }
 }

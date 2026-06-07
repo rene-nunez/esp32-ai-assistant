@@ -11,7 +11,7 @@ void button_init() {
 }
 
 void button_tick() {
-    if (millis() < 2000) return; // cooldown — ignore button for 2s after boot (breaks brownout loop)
+    if (millis() < 2000) return; // cooldown, ignore button for 2s after boot (breaks brownout loop)
 
     bool btn_now = (digitalRead(PIN_BTN) == LOW);
 
