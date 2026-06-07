@@ -8,7 +8,6 @@ from server import config
 
 log = logging.getLogger(__name__)
 
-
 class Transcriber:
     def __init__(self) -> None:
         self._model: WhisperModel | None = None

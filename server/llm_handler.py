@@ -6,7 +6,6 @@ from server.client import groq
 
 log = logging.getLogger(__name__)
 
-
 def ask(text: str) -> str:
     log.info("Asking the LLM...")
     start = time.time()
