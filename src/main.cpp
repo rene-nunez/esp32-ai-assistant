@@ -6,6 +6,7 @@
 #endif
 
 void setup() {
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // disable brownout detector — prevents reset loop
     Serial.begin(115200);
     Serial.println();
 
@@ -30,6 +31,7 @@ void setup() {
     Serial.print("WiFi OK, your IP: ");
     Serial.println(WiFi.localIP());
 
+    delay(100); // let power rail stabilize before enabling I2S peripherals
     network_init();
     audio_init();
     i2s_init();
