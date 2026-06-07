@@ -2,7 +2,7 @@
 #include <WiFi.h>
 
 #ifndef WIFI_SSID
-#error "WIFI_SSID not defined. Create .env from .env.example"
+#error "WIFI_SSID not defined. Copy include/secrets.h.example -> include/secrets.h"
 #endif
 
 void setup() {

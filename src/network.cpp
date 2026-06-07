@@ -1,7 +1,7 @@
 #include "config.h"
 
 #ifndef SERVER_IP
-#error "SERVER_IP not defined. Create .env from .env.example"
+#error "SERVER_IP not defined. Copy include/secrets.h.example -> include/secrets.h"
 #endif
 
 #ifndef WS_PORT
