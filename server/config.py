@@ -30,7 +30,7 @@ LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")
 LLM_TEMPERATURE: Final[float] = 0.7
 LLM_MAX_TOKENS: Final[int] = 300
 
-TTS_MAX_CHARS: Final[int] = 190
+TTS_MAX_CHARS: Final[int] = 2000  # single request for most responses — avoids gaps between fragments
 
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",

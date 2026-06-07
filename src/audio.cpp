@@ -11,7 +11,7 @@ bool is_playing() {
 
 void audio_init() {
     audio.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT); // I2S_NUM_0 (amp) avoids conflict with mic I2S_NUM_1
-    audio.setVolume(21); // lower volume reduces current draw, helps prevent brownout
+    audio.setVolume(24); // lower volume reduces current draw, helps prevent brownout
     Serial.println("Audio OK");
 }
 
