@@ -96,7 +96,7 @@ cp include/secrets.h.example include/secrets.h
 # Configure in secrets.h:
 # WIFI_SSID "your-network-name"
 # WIFI_PASSWORD "your-password"
-# SERVER_IP 192.168.1.100
+# SERVER_IP your-server-ip
 # WS_PORT 8765
 
 pio run -t upload
