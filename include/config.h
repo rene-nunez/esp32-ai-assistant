@@ -1,7 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Framework and libraries
 #include <Arduino.h>
 #include <ArduinoWebsockets.h>
 #include <driver/i2s.h>
@@ -34,7 +33,7 @@ extern websockets::WebsocketsClient ws_client;
 #define WS_RETRY_MS 3000
 #define MAX_QUEUE 8
 
-// User secrets (copy secrets.h.example to secrets.h)
+// Secrets (copy secrets.h.example to secrets.h)
 #if __has_include("secrets.h")
     #include "secrets.h"
 #else
