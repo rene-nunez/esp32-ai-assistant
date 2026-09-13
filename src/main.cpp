@@ -95,7 +95,7 @@ void setup() {
   button.begin(onStartListening);
   vad.begin(onStopListening);
 
-  Serial.println("READY (v2 + VAD)");
+  Serial.println("READY");
 }
 
 void loop() {

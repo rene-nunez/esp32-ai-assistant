@@ -1,6 +1,5 @@
 #include "vad.h"
 #include "config.h"
-#include <string.h>
 
 void VAD::begin(OnStopListening on_stop) {
   on_stop_ = on_stop;
@@ -30,18 +29,6 @@ void VAD::tick() {
   if (bytes_read > 0) {
     int count = bytes_read / (int)sizeof(int16_t);
     int16_t e = energy(samples_, count);
-
-#if VAD_DEBUG
-    static unsigned long last_print = 0;
-    static int16_t peak = 0;
-    if (e > peak) peak = e;
-    if (millis() - last_print > 1000) {
-      last_print = millis();
-      Serial.print("[vad] peak energy per second: ");
-      Serial.println(peak);
-      peak = 0;
-    }
-#endif
 
     if (e > VAD_ENERGY_THRESHOLD) {
       last_voice_time_ = millis();

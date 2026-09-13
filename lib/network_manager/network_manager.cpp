@@ -12,9 +12,6 @@
 #define TOSTRING_(x) STRINGIFY_(x)
 #define WS_URL "ws://" TOSTRING_(SERVER_IP) ":" TOSTRING_(WS_PORT)
 
-static NetworkManager::MessageCallback s_on_text  = nullptr;
-static NetworkManager::BinaryCallback  s_on_binary = nullptr;
-
 bool NetworkManager::connect_() {
   if (client_.connect(WS_URL)) {
     Serial.println("WebSocket OK");
@@ -24,19 +21,19 @@ bool NetworkManager::connect_() {
 }
 
 void NetworkManager::begin(MessageCallback on_text, BinaryCallback on_binary) {
-  s_on_text  = on_text;
-  s_on_binary = on_binary;
+  on_text_ = on_text;
+  on_binary_ = on_binary;
 
-  client_.onMessage([](websockets::WebsocketsMessage msg) {
+  client_.onMessage([this](websockets::WebsocketsMessage msg) {
     if (msg.isText()) {
       String text = msg.data();
       text.trim();
-      if (text.length() > 0 && s_on_text) {
-        s_on_text(text);
+      if (text.length() > 0 && on_text_) {
+        on_text_(text);
       }
     } else if (msg.isBinary()) {
-      if (s_on_binary) {
-        s_on_binary(
+      if (on_binary_) {
+        on_binary_(
           (const uint8_t*)msg.data().c_str(),
           msg.data().length()
         );

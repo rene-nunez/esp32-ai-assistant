@@ -15,6 +15,8 @@ public:
 
 private:
   websockets::WebsocketsClient client_;
+  MessageCallback on_text_ = nullptr;
+  BinaryCallback on_binary_ = nullptr;
   unsigned long last_attempt_ = 0;
 
   bool connect_();

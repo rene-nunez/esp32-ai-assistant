@@ -17,7 +17,6 @@ class MessageType(IntEnum):
 
 CMD_VOICE_START = "VOICE_START"
 CMD_VOICE_END = "VOICE_END"
-CMD_PLAY_TEXT = "PLAY_TEXT:"
 
 def encode(msg_type: int, payload: bytes) -> bytes:
     length = len(payload)
@@ -38,9 +37,3 @@ def decode(data: bytes) -> tuple[int, bytes]:
         )
     payload = data[5:5 + length]
     return msg_type, payload
-
-def encode_text(text: str) -> bytes:
-    return encode(MessageType.TEXT, text.encode("utf-8"))
-
-def encode_audio(pcm_or_wav: bytes) -> bytes:
-    return encode(MessageType.AUDIO, pcm_or_wav)
