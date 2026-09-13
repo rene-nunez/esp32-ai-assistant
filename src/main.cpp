@@ -1,69 +1,115 @@
-#include "config.h"
 #include <WiFi.h>
 #include <esp_system.h>
 
+#include "config.h"
+
+#include "network_manager.h"
+#include "protocol_manager.h"
+#include "audio_manager.h"
+#include "button_manager.h"
+#include "vad.h"
+
 #ifndef WIFI_SSID
-    #error "WIFI_SSID not defined. Copy include/secrets.h.example to include/secrets.h"
+  #error "WIFI_SSID not defined. Copy include/secrets.h.example to include/secrets.h"
 #endif
 
-static void print_reset_reason() {
-    switch (esp_reset_reason()) {
-        case ESP_RST_BROWNOUT: Serial.println("Reset: brownout"); break;
-        case ESP_RST_POWERON: Serial.println("Reset: power-on"); break;
-        case ESP_RST_SW: Serial.println("Reset: software"); break;
-        case ESP_RST_PANIC: Serial.println("Reset: panic"); break;
-        case ESP_RST_WDT: Serial.println("Reset: watchdog"); break;
-        default: break;
-    }
+static NetworkManager  net;
+static ProtocolManager proto(net);
+static AudioManager    audio;
+static ButtonManager   button(proto);
+static VAD             vad(proto, audio);
+
+static void onTextMessage(const String& text) {
+  if (text.startsWith("[log] ")) {
+    Serial.println(text.substring(6));
+  } else {
+    audio.ttsQueue().enqueue(text);
+  }
+}
+
+static void onBinaryMessage(const uint8_t* data, size_t len) {
+  if (len < 5) return;
+
+  uint8_t type = data[0];
+  uint32_t payload_len =
+    ((uint32_t)data[1] << 24) | ((uint32_t)data[2] << 16) |
+    ((uint32_t)data[3] << 8)  | ((uint32_t)data[4]);
+
+  if (5 + payload_len > len) return;
+
+  if (type == MSG_TEXT) {
+    String text = String((const char*)(data + 5), payload_len);
+    audio.ttsQueue().enqueue(text);
+  }
+}
+
+static void onStartListening() {
+  vad.resetTimeout();
+}
+
+static void onStopListening() {
+  button.stopListening();
+}
+
+static void printResetReason() {
+  switch (esp_reset_reason()) {
+    case ESP_RST_BROWNOUT: Serial.println("Reset: brownout"); break;
+    case ESP_RST_POWERON:  Serial.println("Reset: power-on");  break;
+    case ESP_RST_SW:       Serial.println("Reset: software");  break;
+    case ESP_RST_PANIC:    Serial.println("Reset: panic");     break;
+    case ESP_RST_WDT:      Serial.println("Reset: watchdog");  break;
+    default: break;
+  }
 }
 
 void setup() {
-    Serial.begin(115200);
-    print_reset_reason();
-    Serial.println();
+  Serial.begin(115200);
+  printResetReason();
+  Serial.println();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-    Serial.print("Connecting to WiFi...");
-    int timeout = 30; // 15s max, avoids infinite hang
+  Serial.print("Connecting to WiFi...");
+  int timeout = 30;
+  while (WiFi.status() != WL_CONNECTED && timeout > 0) {
+    delay(500);
+    timeout--;
+    Serial.print(".");
+  }
 
-    while (WiFi.status() != WL_CONNECTED && timeout > 0) {
-        delay(500);
-        timeout--;
-        Serial.print(".");
-    }
-    
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("\nWiFi timeout restarting");
-        ESP.restart();
-    }
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nWiFi timeout restarting");
+    ESP.restart();
+  }
 
-    Serial.println();
-    Serial.print("WiFi OK, your IP: ");
-    Serial.println(WiFi.localIP());
+  Serial.println();
+  Serial.print("WiFi OK, your IP: ");
+  Serial.println(WiFi.localIP());
 
-    delay(100); // let power rail stabilize before enabling I2S peripherals
-    network_init();
-    audio_init();
-    i2s_init();
-    button_init();
+  delay(100);
 
-    Serial.println("READY (v2 + VAD)");
+  net.begin(onTextMessage, onBinaryMessage);
+  audio.initSpeaker();
+  audio.initMic();
+  button.begin(onStartListening);
+  vad.begin(onStopListening);
+
+  Serial.println("READY (v2 + VAD)");
 }
 
 void loop() {
-    network_tick(); // keep WebSocket alive
-    audio_tick(); // keep TTS playback alive
+  net.tick();
+  audio.tick();
 
-    if (WiFi.status() != WL_CONNECTED) return; // auto-reconnect in bg
-    if (is_playing()) return; // skip VAD while TTS playing (echo)
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (audio.isPlaying()) return;
 
-    button_tick();
+  button.tick();
 
-    if (is_listening()) {
-        vad_tick();
-    } else {
-        yield(); // cooperative, non-blocking
-    }
+  if (button.isListening()) {
+    vad.tick();
+  } else {
+    yield();
+  }
 }

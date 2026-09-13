@@ -58,16 +58,22 @@ async def _process_and_respond(
     audio_data: Sequence[float],
     websocket: ServerConnection,
 ) -> None:
+    await websocket.send("[log] [ai] thinking...")
+
     audio_np = np.array(audio_data, dtype=np.float32)
 
     text = transcriber.transcribe(audio_np)
     if not text:
         log.info("Audio detected but not clear speech.")
+        await websocket.send("[log] [you] (no speech detected)")
         await websocket.send("Sorry, I didn't catch that. Please repeat.")
         return
 
+    await websocket.send(f"[log] [you] {text}")
+
     log.info("[Voice]: %s", text)
     response = llm_handler.ask(text)
+    await websocket.send(f"[log] [ai] {response}")
     await tts_handler.generate_and_send(response, websocket)
 
 async def main() -> None:

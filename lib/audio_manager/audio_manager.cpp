@@ -54,9 +54,6 @@ void AudioManager::tick() {
     play_start_ = millis();
     String payload = queue_.dequeue();
 
-    Serial.print("Playing: ");
-    Serial.println(payload);
-
     audio_.connecttospeech(payload.c_str(), "en");
   }
 
