@@ -11,6 +11,7 @@ from server import protocol
 from server.transcriber import Transcriber
 from server import llm_handler
 from server import tts_handler
+from server import laptop_tts
 
 log = logging.getLogger(__name__)
 
@@ -74,13 +75,24 @@ async def _process_and_respond(
     log.info("[Voice]: %s", text)
     response = llm_handler.ask(text)
     await websocket.send(f"[log] [ai] {response}")
-    await tts_handler.generate_and_send(response, websocket)
+
+    if config.PLAYBACK_TARGET == "laptop":
+        if not await laptop_tts.play(response):
+            await websocket.send("[log] [tts] laptop unavailable, playing on ESP32")
+            await tts_handler.generate_and_send(response, websocket)
+        else:
+            await websocket.send("[log] [tts] playing on laptop")
 
 async def main() -> None:
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None # ESP32 can be silent minutes when idle
     ):
         log.info("Server ready on port %d", config.WS_PORT)
+        log.info(
+            "Playback target: %s (laptop player: %s)",
+            config.PLAYBACK_TARGET,
+            laptop_tts.player_name(),
+        )
         await asyncio.Future()
 
 if __name__ == "__main__":

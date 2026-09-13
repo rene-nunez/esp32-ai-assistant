@@ -32,6 +32,11 @@ LLM_MAX_TOKENS: Final[int] = 80
 
 TTS_MAX_CHARS: Final[int] = 300 # Google TTS URL limit ~200 chars per fragment
 
+# Playback: "device" = ESP32 speaker (default), "laptop" = edge-tts on this machine
+PLAYBACK_TARGET: Final[str] = os.getenv("PLAYBACK_TARGET", "device").lower()
+TTS_SERVER_VOICE: Final[str] = os.getenv("TTS_SERVER_VOICE", "en-US-AriaNeural")
+TTS_SERVER_RATE: Final[str] = os.getenv("TTS_SERVER_RATE", "+0%")
+
 SYSTEM_PROMPT: Final[dict[str, str]] = {
     "role": "system",
     "content": (
