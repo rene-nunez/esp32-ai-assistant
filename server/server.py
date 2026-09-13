@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import os
+import time
 from collections.abc import Sequence
 
 import numpy as np
@@ -13,12 +15,14 @@ from server import llm_handler
 from server import tts_handler
 from server import laptop_tts
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("sys")
+
+_SAMPLE_RATE_HZ = 16000
 
 transcriber = Transcriber()
 
 async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM TTS (sequential by data dependency)
-    log.info("ESP32 Connected")
+    log.info("ESP32 connected")
     audio_buffer: list[float] = []
     awaiting_phrase = False
 
@@ -32,11 +36,11 @@ async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM
             if msg_type == protocol.MessageType.TEXT:
                 text = payload.decode("utf-8")
                 if text == protocol.CMD_VOICE_START:
-                    log.info("Voice started")
+                    log.info("voice start")
                     awaiting_phrase = True
                     audio_buffer = []
                 elif text == protocol.CMD_VOICE_END:
-                    log.info("Voice ended (%d samples)", len(audio_buffer))
+                    log.info("voice end (%.1fs of audio)", len(audio_buffer) / _SAMPLE_RATE_HZ)
                     awaiting_phrase = False
                     if audio_buffer:
                         await _process_and_respond(audio_buffer, websocket)
@@ -51,7 +55,7 @@ async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM
                     audio_buffer.extend(samples)
 
     except websockets.exceptions.ConnectionClosed:
-        log.warning("ESP32 Disconnected")
+        log.warning("ESP32 disconnected")
     except Exception as e:
         log.error("WebSocket error: %s", e)
 
@@ -63,42 +67,68 @@ async def _process_and_respond(
 
     audio_np = np.array(audio_data, dtype=np.float32)
 
+    start = time.time()
     text = transcriber.transcribe(audio_np)
+    stt_time = time.time() - start
+
     if not text:
-        log.info("Audio detected but not clear speech.")
+        log.info("[you] (no speech detected)")
         await websocket.send("[log] [you] (no speech detected)")
         await websocket.send("Sorry, I didn't catch that. Please repeat.")
         return
 
+    log.info("[you] %s (%.1fs)", text, stt_time)
     await websocket.send(f"[log] [you] {text}")
 
-    log.info("[Voice]: %s", text)
+    start = time.time()
     response = llm_handler.ask(text)
+    llm_time = time.time() - start
+
+    log.info("[ai] %s (%.1fs)", response, llm_time)
     await websocket.send(f"[log] [ai] {response}")
 
     if config.PLAYBACK_TARGET == "laptop":
         if not await laptop_tts.play(response):
+            log.info("[tts] laptop unavailable, playing on ESP32")
             await websocket.send("[log] [tts] laptop unavailable, playing on ESP32")
             await tts_handler.generate_and_send(response, websocket)
         else:
+            log.info("[tts] playing on laptop")
             await websocket.send("[log] [tts] playing on laptop")
+
+class _NoInfoFormatter(logging.Formatter):
+    """INFO lines show no level tag; WARNING/ERROR keep [WARNING]/[ERROR]."""
+
+    _plain = "%(asctime)s [%(name)s] %(message)s"
+    _leveled = "%(asctime)s [%(name)s] [%(levelname)s] %(message)s"
+
+    def format(self, record: logging.LogRecord) -> str:
+        self._style._fmt = (
+            self._leveled if record.levelno >= logging.WARNING else self._plain
+        )
+        return super().format(record)
 
 async def main() -> None:
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None # ESP32 can be silent minutes when idle
     ):
-        log.info("Server ready on port %d", config.WS_PORT)
+        log.info("server ready on 0.0.0.0:%d", config.WS_PORT)
         log.info(
-            "Playback target: %s (laptop player: %s)",
+            "playback: %s (%s) | whisper: %s/%s/%s | llm: %s",
             config.PLAYBACK_TARGET,
             laptop_tts.player_name(),
+            config.WHISPER_MODEL,
+            config.WHISPER_DEVICE,
+            config.WHISPER_COMPUTE_TYPE,
+            config.LLM_MODEL,
         )
         await asyncio.Future()
 
 if __name__ == "__main__":
+    handler = logging.StreamHandler()
+    handler.setFormatter(_NoInfoFormatter(datefmt="%H:%M:%S"))
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%H:%M:%S",
+        level=logging.DEBUG if os.getenv("LOG_LEVEL") == "DEBUG" else logging.INFO,
+        handlers=[handler],
     )
     asyncio.run(main())

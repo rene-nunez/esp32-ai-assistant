@@ -4,10 +4,10 @@ import logging
 from server import config
 from server.client import groq
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("llm")
 
 def ask(text: str) -> str:
-    log.info("Asking the LLM...")
+    log.debug("asking %s...", config.LLM_MODEL)
     start = time.time()
 
     try:
@@ -19,10 +19,9 @@ def ask(text: str) -> str:
         )
         response = chat_completion.choices[0].message.content.strip()
     except Exception as e:
-        log.error("LLM API error: %s", e)
+        log.error("llm api error: %s", e)
         response = "I'm sorry, please try again."
 
-    log.info("AI: %s", response)
-    log.info("LLM latency: %.2fs", time.time() - start)
+    log.debug("llm done (%.2fs)", time.time() - start)
 
     return response

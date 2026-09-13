@@ -1,11 +1,10 @@
-import time
 import logging
 
 from websockets.server import ServerConnection
 
 from server import config
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tts")
 
 def split_text(text: str, max_chars: int) -> list[str]: # fragment at 190 chars, connecttospeech() uses HTTPS GET (long URLs truncated)
     words = text.split() # word-boundary split for natural prosody
@@ -23,10 +22,8 @@ def split_text(text: str, max_chars: int) -> list[str]: # fragment at 190 chars,
     return fragments if fragments else [text[:max_chars]]
 
 async def generate_and_send(text: str, websocket: ServerConnection) -> None: # ESP32 fetches Google TTS natively, server only sends text
-    t = time.time()
-
     fragments = split_text(text, max_chars=config.TTS_MAX_CHARS)
     for frag in fragments:
         await websocket.send(frag)
 
-    log.info("Total latency: %.2fs", time.time() - t)
+    log.debug("sent %d fragments to ESP32", len(fragments))

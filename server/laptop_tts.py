@@ -11,7 +11,7 @@ import edge_tts
 
 from server import config
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("tts")
 
 _PLAYERS = [
     ("mpv", ["mpv", "--no-terminal", "--volume=100"]),
@@ -103,9 +103,9 @@ async def play(text: str) -> bool:
             target=_wait_and_cleanup, args=(proc, path), daemon=True
         ).start()
 
-        log.info("Played on laptop (%s): %r", name, text[:120])
+        log.debug("played on laptop (%s)", name)
         return True
 
     except Exception as e:
-        log.warning("Laptop playback failed, falling back to ESP32: %s", e)
+        log.warning("laptop playback failed, falling back to ESP32: %s", e)
         return False

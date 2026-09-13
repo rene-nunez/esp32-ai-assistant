@@ -6,7 +6,7 @@ from faster_whisper import WhisperModel
 
 from server import config
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("stt")
 
 class Transcriber:
     def __init__(self) -> None:
@@ -15,7 +15,7 @@ class Transcriber:
     def ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        log.info("Loading Whisper model...")
+        log.info("loading whisper %s model...", config.WHISPER_MODEL)
         self._model = WhisperModel(
             config.WHISPER_MODEL,
             device=config.WHISPER_DEVICE,
