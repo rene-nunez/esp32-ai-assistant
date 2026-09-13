@@ -16,6 +16,7 @@ public:
 
   bool isPlaying() const;
   void stopPlaying();
+  void setTtsLang(const String& lang);
 
   int readMic(int16_t* samples, size_t max_samples);
 
@@ -24,6 +25,7 @@ public:
 private:
   Audio audio_;
   RingBuffer<String, MAX_QUEUE> queue_;
+  String tts_lang_ = "en";
   bool playing_ = false;
   unsigned long play_start_ = 0;
 };

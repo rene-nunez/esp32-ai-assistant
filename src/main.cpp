@@ -22,6 +22,8 @@ static VAD             vad(proto, audio);
 static void onTextMessage(const String& text) {
   if (text.startsWith("[log] ")) {
     Serial.println(text.substring(6));
+  } else if (text.startsWith("LANG:")) {
+    audio.setTtsLang(text.substring(5));
   } else {
     audio.ttsQueue().enqueue(text);
   }

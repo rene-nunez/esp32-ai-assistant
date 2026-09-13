@@ -34,7 +34,7 @@ class Transcriber:
         segments, _ = self._model.transcribe(
             audio_norm,
             beam_size=5,
-            language="en",
+            language=config.LANGUAGE,
             vad_filter=True,
             vad_parameters=dict(
                 min_silence_duration_ms=config.VAD_MIN_SILENCE_MS,

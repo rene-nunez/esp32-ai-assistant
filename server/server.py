@@ -19,10 +19,16 @@ log = logging.getLogger("sys")
 
 _SAMPLE_RATE_HZ = 16000
 
+_NO_SPEECH_MSG = {
+    "en": "Sorry, I didn't catch that. Please repeat.",
+    "es": "Lo siento, no capté eso. Repite, por favor.",
+}
+
 transcriber = Transcriber()
 
 async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM TTS (sequential by data dependency)
     log.info("ESP32 connected")
+    await websocket.send(f"LANG:{config.LANGUAGE}")
     audio_buffer: list[float] = []
     awaiting_phrase = False
 
@@ -73,8 +79,8 @@ async def _process_and_respond(
 
     if not text:
         log.info("[you] (no speech detected)")
-        await websocket.send("[log] [you] (no speech detected)")
-        await websocket.send("Sorry, I didn't catch that. Please repeat.")
+        await websocket.send(f"[log] [you] (no speech detected)")
+        await websocket.send(_NO_SPEECH_MSG[config.LANGUAGE])
         return
 
     log.info("[you] %s (%.1fs)", text, stt_time)
@@ -114,13 +120,14 @@ async def main() -> None:
     ):
         log.info("server ready on 0.0.0.0:%d", config.WS_PORT)
         log.info(
-            "playback: %s (%s) | whisper: %s/%s/%s | llm: %s",
+            "playback: %s (%s) | whisper: %s/%s/%s | llm: %s | lang: %s",
             config.PLAYBACK_TARGET,
             laptop_tts.player_name(),
             config.WHISPER_MODEL,
             config.WHISPER_DEVICE,
             config.WHISPER_COMPUTE_TYPE,
             config.LLM_MODEL,
+            config.LANGUAGE,
         )
         await asyncio.Future()
 

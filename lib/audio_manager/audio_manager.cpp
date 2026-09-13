@@ -55,7 +55,7 @@ void AudioManager::tick() {
     play_start_ = millis();
     String payload = queue_.dequeue();
 
-    audio_.connecttospeech(payload.c_str(), "en");
+    audio_.connecttospeech(payload.c_str(), tts_lang_.c_str());
   }
 
   if (playing_ && (millis() - play_start_ > PLAY_TIMEOUT)) {
@@ -71,6 +71,10 @@ bool AudioManager::isPlaying() const {
 
 void AudioManager::stopPlaying() {
   playing_ = false;
+}
+
+void AudioManager::setTtsLang(const String& lang) {
+  tts_lang_ = lang;
 }
 
 int AudioManager::readMic(int16_t* samples, size_t max_samples) {
