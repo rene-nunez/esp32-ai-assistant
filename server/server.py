@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import time
 from collections.abc import Sequence
 
@@ -79,7 +78,7 @@ async def _process_and_respond(
 
     if not text:
         log.info("[you] (no speech detected)")
-        await websocket.send(f"[log] [you] (no speech detected)")
+        await websocket.send("[log] [you] (no speech detected)")
         await websocket.send(_NO_SPEECH_MSG[config.LANGUAGE])
         return
 
@@ -135,7 +134,7 @@ if __name__ == "__main__":
     handler = logging.StreamHandler()
     handler.setFormatter(_NoInfoFormatter(datefmt="%H:%M:%S"))
     logging.basicConfig(
-        level=logging.DEBUG if os.getenv("LOG_LEVEL") == "DEBUG" else logging.INFO,
+        level=logging.INFO,
         handlers=[handler],
     )
     asyncio.run(main())

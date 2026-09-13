@@ -18,11 +18,6 @@ class MessageType(IntEnum):
 CMD_VOICE_START = "VOICE_START"
 CMD_VOICE_END = "VOICE_END"
 
-def encode(msg_type: int, payload: bytes) -> bytes:
-    length = len(payload)
-    header = struct.pack(">BI", msg_type & 0xFF, length)
-    return header + payload
-
 def decode(data: bytes) -> tuple[int, bytes]:
     if len(data) < HEADER_SIZE:
         raise ValueError(

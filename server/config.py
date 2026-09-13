@@ -30,7 +30,7 @@ LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")
 LLM_TEMPERATURE: Final[float] = 0.7
 LLM_MAX_TOKENS: Final[int] = 80
 
-TTS_MAX_CHARS: Final[int] = 300 # Google TTS URL limit ~200 chars per fragment
+TTS_MAX_CHARS: Final[int] = 300 # max chars per TTS fragment sent to the ESP32
 
 # Language: "en" or "es". Drives Whisper, LLM prompt, default TTS voice and ESP32 Google TTS.
 LANGUAGE: Final[str] = os.getenv("LANGUAGE", "en").lower()

@@ -29,22 +29,6 @@ static void onTextMessage(const String& text) {
   }
 }
 
-static void onBinaryMessage(const uint8_t* data, size_t len) {
-  if (len < 5) return;
-
-  uint8_t type = data[0];
-  uint32_t payload_len =
-    ((uint32_t)data[1] << 24) | ((uint32_t)data[2] << 16) |
-    ((uint32_t)data[3] << 8)  | ((uint32_t)data[4]);
-
-  if (5 + payload_len > len) return;
-
-  if (type == MSG_TEXT) {
-    String text = String((const char*)(data + 5), payload_len);
-    audio.ttsQueue().enqueue(text);
-  }
-}
-
 static void onStartListening() {
   vad.resetTimeout();
 }
@@ -91,7 +75,7 @@ void setup() {
 
   delay(100);
 
-  net.begin(onTextMessage, onBinaryMessage);
+  net.begin(onTextMessage, nullptr);
   audio.initSpeaker();
   audio.initMic();
   button.begin(onStartListening);
