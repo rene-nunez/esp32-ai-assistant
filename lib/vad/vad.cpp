@@ -20,16 +20,15 @@ int16_t VAD::energy(const int16_t* samples, size_t count) {
 }
 
 void VAD::tick() {
-  int16_t samples[512];
-  int bytes_read = audio_.readMic(samples, 512);
+  int bytes_read = audio_.readMic(samples_, CHUNK_SAMPLES);
 
   if (bytes_read > 0) {
     int count = bytes_read / (int)sizeof(int16_t);
-    int16_t e = energy(samples, count);
+    int16_t e = energy(samples_, count);
 
     if (e > VAD_ENERGY_THRESHOLD) {
       last_voice_time_ = millis();
-      proto_.sendAudio(samples, bytes_read);
+      proto_.sendAudio(samples_, bytes_read);
     }
 
     if (last_voice_time_ > 0 &&
