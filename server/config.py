@@ -23,7 +23,7 @@ VAD_MIN_SPEECH_MS: Final[int] = 150 # lower = less aggressive filtering of short
 NO_SPEECH_THRESHOLD: Final[float] = 0.7
 NO_SPEECH_PROB_THRESHOLD: Final[float] = 0.5
 
-VOLUME_MIN_THRESHOLD: Final[float] = 0.005 # lower = more sensitive to quiet speech
+VOLUME_MIN_THRESHOLD: Final[float] = 0.002 # lower = more sensitive to quiet speech
 
 # LLM
 LLM_MODEL: Final[str] = os.getenv("LLM_MODEL", "groq/compound")

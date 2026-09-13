@@ -32,7 +32,7 @@ void AudioManager::initMic() {
     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
     .dma_buf_count = 8,
     .dma_buf_len = 1024,
-    .use_apll = false
+    .use_apll = true
   };
 
   i2s_pin_config_t pin_config = {
@@ -44,6 +44,7 @@ void AudioManager::initMic() {
 
   i2s_driver_install(I2S_MIC, &i2s_config, 0, NULL);
   i2s_set_pin(I2S_MIC, &pin_config);
+  i2s_set_clk(I2S_MIC, 16000, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO);
 }
 
 void AudioManager::tick() {

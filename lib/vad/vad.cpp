@@ -1,5 +1,6 @@
 #include "vad.h"
 #include "config.h"
+#include <string.h>
 
 void VAD::begin(OnStopListening on_stop) {
   on_stop_ = on_stop;
@@ -7,6 +8,10 @@ void VAD::begin(OnStopListening on_stop) {
 
 void VAD::resetTimeout() {
   last_voice_time_ = 0;
+  sending_ = false;
+  for (size_t i = 0; i < PREROLL_CHUNKS; i++) {
+    preroll_bytes_[i] = 0;
+  }
 }
 
 int16_t VAD::energy(const int16_t* samples, size_t count) {
@@ -26,17 +31,46 @@ void VAD::tick() {
     int count = bytes_read / (int)sizeof(int16_t);
     int16_t e = energy(samples_, count);
 
+#if VAD_DEBUG
+    static unsigned long last_print = 0;
+    static int16_t peak = 0;
+    if (e > peak) peak = e;
+    if (millis() - last_print > 1000) {
+      last_print = millis();
+      Serial.print("[vad] peak energy per second: ");
+      Serial.println(peak);
+      peak = 0;
+    }
+#endif
+
     if (e > VAD_ENERGY_THRESHOLD) {
       last_voice_time_ = millis();
-      proto_.sendAudio(samples_, bytes_read);
     }
 
-    if (last_voice_time_ > 0 &&
-        millis() - last_voice_time_ > SILENCE_TIMEOUT_MS) {
-      Serial.println("Silence timeout, auto VOICE_END");
-      proto_.sendControl("VOICE_END");
-      if (on_stop_) on_stop_();
-      last_voice_time_ = 0;
+    if (last_voice_time_ > 0) {
+      if (!sending_) {
+        sending_ = true;
+        for (size_t i = 0; i < PREROLL_CHUNKS; i++) {
+          size_t idx = (preroll_index_ + i) % PREROLL_CHUNKS;
+          if (preroll_bytes_[idx] > 0) {
+            proto_.sendAudio(preroll_[idx], preroll_bytes_[idx]);
+          }
+        }
+      }
+
+      proto_.sendAudio(samples_, bytes_read);
+
+      if (millis() - last_voice_time_ > SILENCE_TIMEOUT_MS) {
+        Serial.println("Silence timeout, auto VOICE_END");
+        proto_.sendControl("VOICE_END");
+        if (on_stop_) on_stop_();
+        sending_ = false;
+        last_voice_time_ = 0;
+      }
+    } else {
+      preroll_bytes_[preroll_index_] = bytes_read;
+      memcpy(preroll_[preroll_index_], samples_, bytes_read);
+      preroll_index_ = (preroll_index_ + 1) % PREROLL_CHUNKS;
     }
   }
 }
