@@ -13,23 +13,31 @@ void ButtonManager::tick() {
 
   bool btn_now = (digitalRead(PIN_BTN) == LOW);
 
-  if (btn_now && !last_state_ && millis() - last_change_ > DEBOUNCE_MS) {
-    listening_ = !listening_;
-    digitalWrite(PIN_LED, listening_);
-    last_change_ = millis();
-
-    Serial.print(listening_ ? "Listening ON" : "Listening OFF");
-
-    if (listening_) {
-      if (on_start_) on_start_();
-      proto_.sendControl("VOICE_START");
-      Serial.println(" — VOICE_START");
-    } else {
-      proto_.sendControl("VOICE_END");
-      Serial.println(" — VOICE_END");
+  if (btn_now == pending_) {
+    if (btn_now != debounced_ && millis() - pending_since_ >= DEBOUNCE_MS) {
+      debounced_ = btn_now;
+      if (!btn_now) handlePress();
     }
+  } else {
+    pending_ = btn_now;
+    pending_since_ = millis();
   }
-  last_state_ = btn_now;
+}
+
+void ButtonManager::handlePress() {
+  listening_ = !listening_;
+  digitalWrite(PIN_LED, listening_);
+
+  Serial.print(listening_ ? "Listening ON" : "Listening OFF");
+
+  if (listening_) {
+    if (on_start_) on_start_();
+    proto_.sendControl("VOICE_START");
+    Serial.println(" — VOICE_START");
+  } else {
+    proto_.sendControl("VOICE_END");
+    Serial.println(" — VOICE_END");
+  }
 }
 
 bool ButtonManager::isListening() const {

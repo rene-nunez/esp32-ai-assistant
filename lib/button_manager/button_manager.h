@@ -17,11 +17,14 @@ public:
   void stopListening();
 
 private:
+  void handlePress();
+
   ProtocolManager& proto_;
   OnStartListening on_start_ = nullptr;
   bool listening_ = false;
-  bool last_state_ = false;
-  unsigned long last_change_ = 0;
+  bool debounced_ = false;
+  bool pending_ = false;
+  unsigned long pending_since_ = 0;
 };
 
 #endif
