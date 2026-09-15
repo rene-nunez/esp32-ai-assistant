@@ -125,16 +125,10 @@ async def main() -> None:
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None # ESP32 can be silent minutes when idle
     ):
         log.info("server on 0.0.0.0:%d", config.WS_PORT)
-        log.info(
-            "playback %s (%s) | whisper %s/%s/%s | llm %s | lang %s",
-            config.PLAYBACK_TARGET,
-            device_tts.player_name(),
-            config.WHISPER_MODEL,
-            config.WHISPER_DEVICE,
-            config.WHISPER_COMPUTE_TYPE,
-            config.LLM_MODEL,
-            config.LANGUAGE,
-        )
+        log.info("playback %s (%s)", config.PLAYBACK_TARGET, device_tts.player_name())
+        log.info("whisper %s/%s/%s", config.WHISPER_MODEL, config.WHISPER_DEVICE, config.WHISPER_COMPUTE_TYPE)
+        log.info("llm %s", config.LLM_MODEL)
+        log.info("lang %s", config.LANGUAGE)
         await asyncio.Future()
 
 if __name__ == "__main__":
