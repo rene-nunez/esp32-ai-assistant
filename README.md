@@ -1,145 +1,137 @@
 # ESP32 AI Assistant
 
-An open-source voice assistant that combines an ESP32 device with a local AI backend. Speech is captured on the ESP32, transcribed with Whisper, processed by Groq, and played back through a speaker using text-to-speech.
+An ESP32 captures your voice, a local Python backend transcribes it using Whisper, generates responses with the Groq LLM you configure, and plays them through either your computer or the ESP32’s speaker.
 
 ![hardware](./assets/hardware.jpeg)
 
 ## Features
 
-* Real-time voice capture on ESP32
-* On-device energy-based Voice Activity Detection (VAD)
-* Whisper speech-to-text transcription
-* Groq-powered conversational AI
-* WebSocket communication (binary ESP32 to server, text server to ESP32)
-* Google TTS audio playback via ESP32-audioI2S library
-* Local/self-hosted Python backend
-* Push-button toggle interaction
+- Push-button toggle with debounce.
+- Energy-based VAD with pre-roll.
+- English or Spanish supported, selected with LANGUAGE.
+- TTS on your computer (edge-tts) or ESP32 speaker (Google TTS), with fallback.
+- WebSocket link: binary frames one way, text frames the other.
 
 ## Hardware
 
-* ESP32 DevKit
-* INMP441 I2S MEMS microphone
-* MAX98357A I2S DAC amplifier
-* 4 ohm 3W speaker
-* Push button (GPIO17)
-* LED indicator (GPIO15)
+You need:
 
-Pin assignments in [./include/config.h](./include/config.h).
+- ESP32.
+- INMP441 microphone.
+- MAX98357A amplifier.
+- 3W speaker.
+- Push button.
+- LED.
 
-## Architecture
+We also use a 100 uF capacitor between VCC and GND on the microphone, and a resistor between the amp GAIN pin and GND.
 
-```text
-┌─────────────────────────┐
-│         ESP32           │
-│                         │
-│  INMP441 Mic            │
-│  VAD Detection          │
-│  Audio Streaming        │
-│  Google TTS             │
-│  MAX98357A Speaker      │
-└────────────┬────────────┘
-             │
-             │ WebSocket
-             │ binary: AUDIO / VOICE_START / VOICE_END
-             │ text: TTS response fragments
-             │
-┌────────────▼────────────┐
-│     Python Server       │
-│                         │
-│  Whisper STT            │
-│  Groq LLM               │
-│  Text response          │
-└─────────────────────────┘
-```
+The pin numbers used by the firmware are in [include/pins.h](include/pins.h). Before flashing, connect every component to the same pins listed there.
 
-## How It Works
+## Prerequisites
 
-1. Press the button to start listening.
-2. Speak into the microphone.
-3. The ESP32 captures audio and uses energy-based VAD to detect speech.
-4. Audio chunks are sent to the Python server over WebSocket as binary messages.
-5. Whisper transcribes the speech to text.
-6. The transcription is sent to Groq for response generation.
-7. The response text is sent back to the ESP32 as a WebSocket text frame.
-8. The ESP32 fetches Google TTS audio via `connecttospeech("en")` and plays it through the speaker.
+- Python 3 and the venv module.
+- PlatformIO CLI.
+- mpv or ffplay installed if you want playback on your computer.
 
 ## Installation
 
 ### Server
 
-```bash
+1. Create and activate a virtual environment:
+
+```
 python -m venv .venv
-.venv\Scripts\activate
+source .venv/bin/activate
+```
+
+2. Install the dependencies:
+
+```
 pip install -r requirements.txt
+```
 
-cp .env.example .env # Add your GROQ_API_KEY, optionally set LLM or Whisper model
+3. Create the .env file from the example:
 
+```
+cp .env.example .env
+```
+
+4. Open .env and set `GROQ_API_KEY`. You can also change the language, the model, the playback target and more. Each option is explained in the file and in the Configuration section below.
+
+5. Start the server:
+
+```
 python -m server.server
 ```
 
-`.env` variables:
-
-|Variable|Default|Description|
-|:---|:---|:---|
-|`GROQ_API_KEY`|—|Groq API key (required)|
-|`LLM_MODEL`|`groq/compound`|Groq model name|
-|`SERVER_WS_PORT`|`8765`|WebSocket server port|
-|`WHISPER_MODEL`|`base`|faster-whisper model size|
-|`WHISPER_DEVICE`|`cpu`|Device for Whisper|
-|`WHISPER_COMPUTE_TYPE`|`int8`|Compute precision|
+The server prints what it is doing on the console and waits for the ESP32 to connect.
 
 ### ESP32
 
-```bash
+1. Create secrets.h from the example:
+
+```
 cp include/secrets.h.example include/secrets.h
+```
 
-# Configure in secrets.h:
-# WIFI_SSID "your-network-name"
-# WIFI_PASSWORD "your-password"
-# SERVER_IP your-server-ip
-# WS_PORT 8765
+2. Open include/secrets.h and fill in your WiFi network and the server address:
 
+- WIFI_SSID: your network name.
+- WIFI_PASSWORD: your network password.
+- SERVER_IP: the address of the computer running the server. Do not put quotes around it.
+
+3. Make sure your wiring matches the pins in include/pins.h (microphone, amplifier, button and LED).
+
+4. Build and flash:
+
+```
 pio run -t upload
 ```
 
->[!IMPORTANT]
->`SERVER_IP` must not be quoted. It is stringified at compile time via `#define STRINGIFY(x) #x`.
+The firmware shows READY on the serial monitor when it connects to WiFi and the server. You can open the serial monitor with the following command:
 
-## Usage
-
-* Press the button to start listening.
-* The LED turns on while recording.
-* Speak normally.
-* After 1.5 seconds of silence, the request is processed automatically.
-* Press the button again at any time to cancel.
+```
+pio device monitor
+```
 
 ## Configuration
 
-Voice Activity Detection parameters can be tuned in [./include/config.h](./include/config.h):
+There are three places to configure:
 
-|Parameter|Description|
-|:---|:---|
-|`VAD_ENERGY_THRESHOLD`|Lower values detect quieter speech, higher values reject more background noise|
-|`SILENCE_TIMEOUT_MS`|Time to wait after speech ends before sending audio for processing|
+- server/.env: server options. Copy it from [.env.example](.env.example) and edit the values you need. Main options:
 
-## Communication Protocol
+  - GROQ_API_KEY: required.
+  - LLM_MODEL: which Groq model to use.
+  - LANGUAGE: en or es.
+  - PLAYBACK_TARGET: device (edge-tts on your computer) or esp32 (ESP32 speaker).
+  - WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE_TYPE.
+  - TTS_SERVER_VOICE, TTS_SERVER_RATE.
 
-### ESP32 to Server
+- include/secrets.h: WiFi name, password and server IP. Copy it from [include/secrets.h.example](include/secrets.h.example).
+- include/config.h: firmware tuning such as voice detection. include/pins.h has the pin numbers.
 
-Binary messages with a 5-byte header:
+## Protocol
 
-```text
-[1 byte type][4 byte big-endian length][payload]
-```
+The ESP32 sends binary frames with a 5 byte header: type (1 byte), length (4 bytes, big endian), then payload.
 
-|Value|Description|
-|:---|:---|
-|`0x01`|PCM audio data (16-bit, 16 kHz, mono)|
-|`0x02`|Control text (`VOICE_START`, `VOICE_END`)|
+- Type 0x01: PCM audio, 16-bit, 16 kHz, mono
+- Type 0x02: control text (VOICE_START or VOICE_END)
 
-### Server to ESP32
+The server sends plain text frames:
 
-Raw WebSocket text frames containing response fragments. The ESP32 plays them via `audio.connecttospeech(text, "en")`.
+- Frames starting with [log] are printed but not spoken.
+- Frames starting with LANG: set the TTS language.
+- Any other frame is spoken on the ESP32 speaker.
+
+## Usage
+
+Press the button to start listening. Speak. The reply is played after 1.5 seconds of silence. Press the button again to stop early.
+
+See the server console for the transcript and the answer.
+
+## Tuning speech detection
+
+If the assistant misses quiet speech, lower VAD_ENERGY_THRESHOLD in [include/config.h](include/config.h). If it starts while you are not talking, raise it. SILENCE_TIMEOUT_MS sets how long after speaking the session ends.
 
 ## License
 
