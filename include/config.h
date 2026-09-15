@@ -5,7 +5,7 @@
 #include "pins.h"
 
 // Mic energy that starts a session. Lower catches quiet speech,
-// higher rejects background noise. ~150 works in quiet rooms
+// higher rejects background noise. ~150 works in most cases
 #define VAD_ENERGY_THRESHOLD 150
 
 // Quiet time after speaking before the session ends and the
