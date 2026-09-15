@@ -48,7 +48,7 @@ void VAD::tick() {
       proto_.sendAudio(samples_, bytes_read);
 
       if (millis() - last_voice_time_ > SILENCE_TIMEOUT_MS) {
-        Serial.println("Silence timeout, auto VOICE_END");
+        Serial.println("[vad] silence timeout");
         proto_.sendControl("VOICE_END");
         if (on_stop_) on_stop_();
         sending_ = false;

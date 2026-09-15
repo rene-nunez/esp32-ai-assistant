@@ -72,13 +72,13 @@ def _wait_and_cleanup(proc: subprocess.Popen, path: str) -> None:
 async def play(text: str) -> bool:
     player = _available_player()
     if player is None:
-        log.warning("No laptop audio player found (need mpv or ffplay)")
+        log.warning("no audio player found (need mpv or ffplay)")
         return False
 
     try:
         audio_data = await _synthesize(text)
     except Exception as e:
-        log.warning("Laptop playback failed, falling back to ESP32: %s", e)
+        log.warning("playback failed, esp32 fallback: %s", e)
         return False
 
     try:
@@ -103,9 +103,9 @@ async def play(text: str) -> bool:
             target=_wait_and_cleanup, args=(proc, path), daemon=True
         ).start()
 
-        log.debug("played on laptop (%s)", name)
+        log.debug("played (%s)", name)
         return True
 
     except Exception as e:
-        log.warning("laptop playback failed, falling back to ESP32: %s", e)
+        log.warning("playback failed, esp32 fallback: %s", e)
         return False

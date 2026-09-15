@@ -12,7 +12,7 @@ from server import protocol
 from server.transcriber import Transcriber
 from server import llm_handler
 from server import tts_handler
-from server import laptop_tts
+from server import device_tts
 
 log = logging.getLogger("sys")
 
@@ -26,7 +26,7 @@ _NO_SPEECH_MSG = {
 transcriber = Transcriber()
 
 async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM TTS (sequential by data dependency)
-    log.info("ESP32 connected")
+    log.info("connected")
     await websocket.send(f"LANG:{config.LANGUAGE}")
     audio_buffer: list[float] = []
     awaiting_phrase = False
@@ -45,7 +45,7 @@ async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM
                     awaiting_phrase = True
                     audio_buffer = []
                 elif text == protocol.CMD_VOICE_END:
-                    log.info("voice end (%.1fs of audio)", len(audio_buffer) / _SAMPLE_RATE_HZ)
+                    log.info("voice end (%.1fs)", len(audio_buffer) / _SAMPLE_RATE_HZ)
                     awaiting_phrase = False
                     if audio_buffer:
                         await _process_and_respond(audio_buffer, websocket)
@@ -60,7 +60,7 @@ async def handle_audio(websocket: ServerConnection) -> None: # pipeline: STT LLM
                     audio_buffer.extend(samples)
 
     except websockets.exceptions.ConnectionClosed:
-        log.warning("ESP32 disconnected")
+        log.warning("disconnected")
     except Exception as e:
         log.error("WebSocket error: %s", e)
 
@@ -92,36 +92,43 @@ async def _process_and_respond(
     log.info("[ai] %s (%.1fs)", response, llm_time)
     await websocket.send(f"[log] [ai] {response}")
 
-    if config.PLAYBACK_TARGET == "laptop":
-        if not await laptop_tts.play(response):
-            log.info("[tts] laptop unavailable, playing on ESP32")
-            await websocket.send("[log] [tts] laptop unavailable, playing on ESP32")
+    if config.PLAYBACK_TARGET == "device":
+        if not await device_tts.play(response):
+            log.info("[tts] esp32 fallback")
+            await websocket.send("[log] [tts] esp32 fallback")
             await tts_handler.generate_and_send(response, websocket)
         else:
-            log.info("[tts] playing on laptop")
-            await websocket.send("[log] [tts] playing on laptop")
+            log.info("[tts] ok")
+            await websocket.send("[log] [tts] ok")
 
 class _NoInfoFormatter(logging.Formatter):
-    """INFO lines show no level tag; WARNING/ERROR keep [WARNING]/[ERROR]."""
+    """INFO lines drop the badge except on tts/stt; WARNING/ERROR keep [LEVEL]."""
 
-    _plain = "%(asctime)s [%(name)s] %(message)s"
-    _leveled = "%(asctime)s [%(name)s] [%(levelname)s] %(message)s"
+    _plain_sys = "%(asctime)s %(message)s"
+    _plain_tag = "%(asctime)s [%(name)s] %(message)s"
+    _leveled_sys = "%(asctime)s [%(levelname)s] %(message)s"
+    _leveled_tag = "%(asctime)s [%(name)s] [%(levelname)s] %(message)s"
 
     def format(self, record: logging.LogRecord) -> str:
-        self._style._fmt = (
-            self._leveled if record.levelno >= logging.WARNING else self._plain
-        )
+        if record.name == "sys":
+            self._style._fmt = (
+                self._leveled_sys if record.levelno >= logging.WARNING else self._plain_sys
+            )
+        else:
+            self._style._fmt = (
+                self._leveled_tag if record.levelno >= logging.WARNING else self._plain_tag
+            )
         return super().format(record)
 
 async def main() -> None:
     async with websockets.serve(
         handle_audio, "0.0.0.0", config.WS_PORT, ping_timeout=None # ESP32 can be silent minutes when idle
     ):
-        log.info("server ready on 0.0.0.0:%d", config.WS_PORT)
+        log.info("server on 0.0.0.0:%d", config.WS_PORT)
         log.info(
-            "playback: %s (%s) | whisper: %s/%s/%s | llm: %s | lang: %s",
+            "playback %s (%s) | whisper %s/%s/%s | llm %s | lang %s",
             config.PLAYBACK_TARGET,
-            laptop_tts.player_name(),
+            device_tts.player_name(),
             config.WHISPER_MODEL,
             config.WHISPER_DEVICE,
             config.WHISPER_COMPUTE_TYPE,

@@ -14,7 +14,7 @@
 
 bool NetworkManager::connect_() {
   if (client_.connect(WS_URL)) {
-    Serial.println("WebSocket OK");
+    Serial.println("[net] ws ok");
     return true;
   }
   return false;
@@ -43,12 +43,12 @@ void NetworkManager::begin(MessageCallback on_text, BinaryCallback on_binary) {
 
   client_.onEvent([](websockets::WebsocketsEvent event, String) {
     if (event == websockets::WebsocketsEvent::ConnectionClosed) {
-      Serial.println("WebSocket disconnected.");
+      Serial.println("[net] ws disconnected");
     }
   });
 
   if (!connect_()) {
-    Serial.println("WebSocket unavailable, retrying in loop...");
+    Serial.println("[net] ws unavailable, retrying");
   }
 }
 
@@ -58,7 +58,7 @@ void NetworkManager::tick() {
     last_attempt_ = 0;
   } else if (last_attempt_ == 0 || millis() - last_attempt_ > WS_RETRY_MS) {
     last_attempt_ = millis();
-    Serial.println("Reconnecting WebSocket...");
+    Serial.println("[net] ws reconnect");
     connect_();
   }
 }

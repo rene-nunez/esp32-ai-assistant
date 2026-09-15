@@ -39,11 +39,11 @@ static void onStopListening() {
 
 static void printResetReason() {
   switch (esp_reset_reason()) {
-    case ESP_RST_BROWNOUT: Serial.println("Reset: brownout"); break;
-    case ESP_RST_POWERON:  Serial.println("Reset: power-on");  break;
-    case ESP_RST_SW:       Serial.println("Reset: software");  break;
-    case ESP_RST_PANIC:    Serial.println("Reset: panic");     break;
-    case ESP_RST_WDT:      Serial.println("Reset: watchdog");  break;
+    case ESP_RST_BROWNOUT: Serial.println("[sys] reset: brownout");  break;
+    case ESP_RST_POWERON:  Serial.println("[sys] reset: power-on");  break;
+    case ESP_RST_SW:       Serial.println("[sys] reset: software");  break;
+    case ESP_RST_PANIC:    Serial.println("[sys] reset: panic");     break;
+    case ESP_RST_WDT:      Serial.println("[sys] reset: watchdog");  break;
     default: break;
   }
 }
@@ -51,26 +51,23 @@ static void printResetReason() {
 void setup() {
   Serial.begin(115200);
   printResetReason();
-  Serial.println();
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  Serial.print("Connecting to WiFi...");
+  Serial.println("[sys] wifi connecting...");
   int timeout = 30;
   while (WiFi.status() != WL_CONNECTED && timeout > 0) {
     delay(500);
     timeout--;
-    Serial.print(".");
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("\nWiFi timeout restarting");
+    Serial.println("[sys] wifi timeout, restarting");
     ESP.restart();
   }
 
-  Serial.println();
-  Serial.print("WiFi OK, your IP: ");
+  Serial.print("[sys] wifi ");
   Serial.println(WiFi.localIP());
 
   delay(100);
@@ -81,7 +78,7 @@ void setup() {
   button.begin(onStartListening);
   vad.begin(onStopListening);
 
-  Serial.println("READY");
+  Serial.println("[sys] ready");
 }
 
 void loop() {

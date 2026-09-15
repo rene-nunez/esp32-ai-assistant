@@ -19,7 +19,7 @@ void AudioManager::initSpeaker() {
   s_instance = this;
   audio_.setPinout(AMP_BCLK, AMP_LRC, AMP_DOUT);
   audio_.setVolume(24);
-  Serial.println("Audio OK");
+  Serial.println("[audio] speaker ok");
 }
 
 void AudioManager::initMic() {
@@ -59,7 +59,7 @@ void AudioManager::tick() {
   }
 
   if (playing_ && (millis() - play_start_ > PLAY_TIMEOUT)) {
-    Serial.println("Playback TIMEOUT — releasing");
+    Serial.println("[audio] playback timeout");
     audio_.stopSong();
     playing_ = false;
   }

@@ -42,8 +42,12 @@ _DEFAULT_TTS_VOICE: Final[dict[str, str]] = {
     "es": "es-ES-ElviraNeural",
 }
 
-# Playback: "device" = ESP32 speaker (default), "laptop" = edge-tts on this machine
-PLAYBACK_TARGET: Final[str] = os.getenv("PLAYBACK_TARGET", "device").lower()
+# Playback: "device" = edge-tts on this device, "esp32" = ESP32 speaker (Google TTS).
+def _parse_playback() -> str:
+    raw = os.getenv("PLAYBACK_TARGET", "").lower()
+    return "device" if raw == "laptop" else (raw or "device")
+
+PLAYBACK_TARGET: Final[str] = _parse_playback()
 TTS_SERVER_VOICE: Final[str] = os.getenv("TTS_SERVER_VOICE") or _DEFAULT_TTS_VOICE[LANGUAGE]
 TTS_SERVER_RATE: Final[str] = os.getenv("TTS_SERVER_RATE", "+0%")
 

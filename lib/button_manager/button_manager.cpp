@@ -28,15 +28,13 @@ void ButtonManager::handlePress() {
   listening_ = !listening_;
   digitalWrite(PIN_LED, listening_);
 
-  Serial.print(listening_ ? "Listening ON" : "Listening OFF");
-
   if (listening_) {
     if (on_start_) on_start_();
     proto_.sendControl("VOICE_START");
-    Serial.println(" — VOICE_START");
+    Serial.println("[btn] listening on");
   } else {
     proto_.sendControl("VOICE_END");
-    Serial.println(" — VOICE_END");
+    Serial.println("[btn] listening off");
   }
 }
 

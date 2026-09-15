@@ -15,7 +15,7 @@ class Transcriber:
     def ensure_loaded(self) -> None:
         if self._model is not None:
             return
-        log.info("loading whisper %s model...", config.WHISPER_MODEL)
+        log.info("loading whisper %s...", config.WHISPER_MODEL)
         self._model = WhisperModel(
             config.WHISPER_MODEL,
             device=config.WHISPER_DEVICE,
