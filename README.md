@@ -103,7 +103,7 @@ There are three places to configure:
   - GROQ_API_KEY: required.
   - LLM_MODEL: which Groq model to use.
   - LANGUAGE: en or es.
-  - PLAYBACK_TARGET: device (edge-tts on your computer) or esp32 (ESP32 speaker).
+  - PLAYBACK_TARGET: computer (edge-tts on your computer) or esp32 (ESP32 speaker).
   - WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE_TYPE.
   - TTS_SERVER_VOICE, TTS_SERVER_RATE.
 

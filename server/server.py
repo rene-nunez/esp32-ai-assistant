@@ -92,7 +92,7 @@ async def _process_and_respond(
     log.info("[ai] %s (%.1fs)", response, llm_time)
     await websocket.send(f"[log] [ai] {response}")
 
-    if config.PLAYBACK_TARGET == "device":
+    if config.PLAYBACK_TARGET == "computer":
         if not await device_tts.play(response):
             log.info("[tts] esp32 fallback")
             await websocket.send("[log] [tts] esp32 fallback")
