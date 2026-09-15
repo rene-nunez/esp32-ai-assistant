@@ -40,7 +40,7 @@ The pin numbers used by the firmware are in [include/pins.h](include/pins.h). Be
 1. Create and activate a virtual environment:
 
 ```
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -135,4 +135,4 @@ If the assistant misses quiet speech, lower VAD_ENERGY_THRESHOLD in [include/con
 
 ## License
 
-MIT License. See [LICENSE](./LICENSE) for details.
+MIT License. See [LICENSE](./LICENSE) for more details.
