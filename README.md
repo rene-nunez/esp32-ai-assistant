@@ -8,7 +8,7 @@ An ESP32 captures your voice, a local Python backend transcribes it using Whispe
 
 - Push-button toggle with debounce.
 - Energy-based VAD with pre-roll.
-- English or Spanish supported, selected with LANGUAGE.
+- English or Spanish supported, selected with `LANGUAGE`.
 - TTS on your computer (edge-tts) or ESP32 speaker (Google TTS), with fallback.
 - WebSocket link: binary frames one way, text frames the other.
 
@@ -76,9 +76,9 @@ cp include/secrets.h.example include/secrets.h
 
 2. Open include/secrets.h and fill in your WiFi network and the server address:
 
-- WIFI_SSID: your network name.
-- WIFI_PASSWORD: your network password.
-- SERVER_IP: the address of the computer running the server. Do not put quotes around it.
+- `WIFI_SSID`: your network name.
+- `WIFI_PASSWORD`: your network password.
+- `SERVER_IP`: the address of the computer running the server. Do not put quotes around it.
 
 3. Make sure your wiring matches the pins in include/pins.h (microphone, amplifier, button and LED).
 
@@ -100,12 +100,12 @@ There are three places to configure:
 
 - server/.env: server options. Copy it from [.env.example](.env.example) and edit the values you need. Main options:
 
-  - GROQ_API_KEY: required.
-  - LLM_MODEL: which Groq model to use.
-  - LANGUAGE: en or es.
-  - PLAYBACK_TARGET: computer (edge-tts on your computer) or esp32 (ESP32 speaker).
-  - WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE_TYPE.
-  - TTS_SERVER_VOICE, TTS_SERVER_RATE.
+  - `GROQ_API_KEY`: required.
+  - `LLM_MODEL`: which Groq model to use.
+  - `LANGUAGE`: en or es.
+  - `PLAYBACK_TARGET`: computer (edge-tts on your computer) or esp32 (ESP32 speaker).
+  - `WHISPER_MODEL`, `WHISPER_DEVICE`, `WHISPER_COMPUTE_TYPE`.
+  - `TTS_SERVER_VOICE`, `TTS_SERVER_RATE`.
 
 - include/secrets.h: WiFi name, password and server IP. Copy it from [include/secrets.h.example](include/secrets.h.example).
 - include/config.h: firmware tuning such as voice detection. include/pins.h has the pin numbers.
@@ -131,7 +131,7 @@ See the server console for the transcript and the answer.
 
 ## Tuning speech detection
 
-If the assistant misses quiet speech, lower VAD_ENERGY_THRESHOLD in [include/config.h](include/config.h). If it starts while you are not talking, raise it. SILENCE_TIMEOUT_MS sets how long after speaking the session ends.
+If the assistant misses quiet speech, lower `VAD_ENERGY_THRESHOLD` in [include/config.h](include/config.h). If it starts while you are not talking, raise it. `SILENCE_TIMEOUT_MS` sets how long after speaking the session ends.
 
 ## License
 
